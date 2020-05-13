@@ -1,0 +1,47 @@
+[server]
+address = "0.0.0.0:9801"
+location = "Asia/Singapore"
+baseLogPath = "./log"
+serverName = "quant"
+serviceName = "all"
+serverTag = "okex"
+
+[baseLog]
+fileName = "info.log"
+fileMaxSize = 500
+FileMaxBackups = 10
+FileMaxAge = 10
+
+[dataLog]
+fileName = "data.log"
+fileMaxSize = 500
+FileMaxBackups = 10
+FileMaxAge = 10
+
+[redis]
+address = "192.168.1.66:6379"
+password = "foobared"
+maxActive = 10
+maxIdle = 5
+idleMills = 0
+
+[mysql]
+user = "root"
+password = "root"
+address = "192.168.1.66:3306"
+dataBase = "exchange_quant"
+maxOpenConn = 10
+maxIdleConn = 3
+
+[trade]
+endpoint = "https://testnet.okex.com"
+wsEndpoint = "wss://real.okex.com:8443/ws/v3?brokerId=181"
+apiKey = "666cd148-9cb1-4a0d-a343-e7be2d1e666f"
+secretKey = "0B95195A625F490452344CAD24E663E0"
+passphrase = "slagga"
+timeoutSecond = 10
+isPrint = true
+i18n = "en_US"
+
+[service]
+notifyUrl = "http://192.168.1.135:8001"

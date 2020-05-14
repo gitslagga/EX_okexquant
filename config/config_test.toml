@@ -42,6 +42,7 @@ passphrase = "slagga"
 timeoutSecond = 10
 isPrint = true
 i18n = "en_US"
+tradePwd = "f4bf0913e77fc631c8faab17076ce259"   #test1
 
 [service]
 notifyUrl = "http://172.31.177.157:8001"

@@ -36,6 +36,7 @@ func main() {
 	}
 	mylog.ConfigLoggers()
 
+	trade.Init()
 	proxy.Init()
 
 	db.InitRedisCli()
@@ -43,8 +44,6 @@ func main() {
 	defer db.CloseRedisCli()
 	db.InitMysqlCli()
 	defer db.CloseMysqlCli()
-
-	trade.Init()
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()

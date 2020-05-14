@@ -53,14 +53,15 @@ type mysqlConfig struct {
 }
 
 type tradeConfig struct {
-	Endpoint        			string
-	WSEndpoint 					string
-	ApiKey                   	string
-	SecretKey                   string
-	Passphrase                  string
-	TimeoutSecond               int
-	IsPrint                    	bool
-	I18n                 	 	string
+	Endpoint      string
+	WSEndpoint    string
+	ApiKey        string
+	SecretKey     string
+	Passphrase    string
+	TimeoutSecond int
+	IsPrint       bool
+	I18n          string
+	TradePwd      string
 }
 
 type serviceConfig struct {

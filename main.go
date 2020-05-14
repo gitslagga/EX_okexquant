@@ -40,7 +40,6 @@ func main() {
 	proxy.Init()
 
 	db.InitRedisCli()
-	db.InitRedisData()
 	defer db.CloseRedisCli()
 	db.InitMysqlCli()
 	defer db.CloseMysqlCli()

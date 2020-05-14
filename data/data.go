@@ -62,19 +62,3 @@ type CommonResp struct {
 	ErrorMessage string      `json:"error_message" form:"error_message"`
 	Data         interface{} `json:"data" form:"data"`
 }
-
-//mofify_account
-type RequestModifyAccount struct {
-	UserId  uint64  `json:"userId"`
-	Address string  `json:"address"`
-	Number  float64 `json:"number"`
-	Chain   string  `json:"chain"`
-	Coin    string  `json:"coin"`
-	Txid    string  `json:"txid"`
-}
-
-type ResponseModifyAccount struct {
-	RespCode int    `json:"respCode"`
-	RespDesc string `json:"respDesc"`
-	RespData string `json:"respData"`
-}

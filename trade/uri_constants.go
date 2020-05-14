@@ -115,7 +115,6 @@ const (
 	SWAP_ORDER                              = "/api/swap/v3/order"
 	SWAP_ORDERS                             = "/api/swap/v3/orders"
 	SWAP_POSITION                           = "/api/swap/v3/position"
-
-	SWAP_CANCEL_BATCH_ORDERS = "/api/swap/v3/cancel_batch_orders/{instrument_id}"
-	SWAP_CANCEL_ORDER        = "/api/swap/v3/cancel_order/{instrument_id}/{order_id}"
+	SWAP_CANCEL_BATCH_ORDERS                = "/api/swap/v3/cancel_batch_orders/{instrument_id}"
+	SWAP_CANCEL_ORDER                       = "/api/swap/v3/cancel_order/{instrument_id}/{order_id}"
 )

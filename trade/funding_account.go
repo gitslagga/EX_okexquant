@@ -5,10 +5,10 @@ import (
 	"EX_okexquant/mylog"
 )
 
-var okexClient *Client
+var OKexClient *Client
 
 func Init() {
-	okexClient = newOKExClient()
+	OKexClient = newOKExClient()
 	mylog.Logger.Error().Msgf("newOKExClient Init success")
 }
 

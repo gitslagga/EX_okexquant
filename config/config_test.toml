@@ -4,7 +4,7 @@ location = "Asia/Singapore"
 baseLogPath = "./log"
 serverName = "quant"
 serviceName = "all"
-serverTag = "okex_main"
+serverTag = "main"
 
 [baseLog]
 fileName = "info.log"

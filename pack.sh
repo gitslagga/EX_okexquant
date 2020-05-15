@@ -17,7 +17,7 @@ rm -rf release
 mkdir -v release
 
 mkdir release/config
-cp -v EX_okexquant release/EX_okexquant_9801
+cp -v EX_okexquant release/EX_okexquant_8000
 cp -v run.sh release/
 if [ "$pack_env" == "prd" ];then
     cp -rv config/config_prd.toml release/config/config.toml

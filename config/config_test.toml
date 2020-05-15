@@ -1,10 +1,10 @@
 [server]
-address = "0.0.0.0:9801"
+address = "0.0.0.0:8000"
 location = "Asia/Singapore"
 baseLogPath = "./log"
 serverName = "quant"
 serviceName = "all"
-serverTag = "okex"
+serverTag = "okex_main"
 
 [baseLog]
 fileName = "info.log"

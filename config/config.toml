@@ -2,7 +2,7 @@
 address = "0.0.0.0:8000"
 location = "Asia/Singapore"
 baseLogPath = "./log"
-serverName = "quant"
+serverName = "quantity"
 serviceName = "all"
 serverTag = "main"
 
@@ -29,9 +29,16 @@ idleMills = 0
 user = "root"
 password = "root"
 address = "192.168.1.66:3306"
-dataBase = "exchange_quant"
+dataBase = "main_quantity"
 maxOpenConn = 10
 maxIdleConn = 3
+
+[mongo]
+applyURI = "mongodb://admin:123456@192.168.1.66:27017"
+localThreshold = 3
+maxConnIdleTime = 5
+maxPoolSize = 200
+timeout = 10
 
 [trade]
 endpoint = "https://testnet.okex.com"

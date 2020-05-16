@@ -5,7 +5,6 @@ import (
 	"EX_okexquant/data"
 	"EX_okexquant/db"
 	"EX_okexquant/mylog"
-	"EX_okexquant/proxy"
 	"EX_okexquant/tasks"
 	"EX_okexquant/trade"
 	"flag"
@@ -36,13 +35,14 @@ func main() {
 	}
 	mylog.ConfigLoggers()
 
-	trade.Init()
-	proxy.Init()
+	//proxy.Init()
+	//db.InitRedisCli()
+	//defer db.CloseRedisCli()
+	//db.InitMysqlCli()
+	//defer db.CloseMysqlCli()
 
-	db.InitRedisCli()
-	defer db.CloseRedisCli()
-	db.InitMysqlCli()
-	defer db.CloseMysqlCli()
+	trade.Init()
+	db.InitMongoCli()
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()

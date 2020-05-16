@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-const (
-	QuantCurrencyList = "quant:currency:list"
-)
-
 var (
 	redisPool *redis.Pool
 )

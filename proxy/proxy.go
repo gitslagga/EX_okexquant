@@ -19,6 +19,7 @@ var httpClient *http.Client
 
 func Init() {
 	httpClient = createHTTPClient()
+	defer httpClient.CloseIdleConnections()
 }
 
 func createHTTPClient() *http.Client {

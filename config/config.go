@@ -15,6 +15,7 @@ type tomlConfig struct {
 	DataLog logConfig
 	Redis   redisConfig
 	Mysql   mysqlConfig
+	Mongo   mongoConfig
 	Trade   tradeConfig
 	Service serviceConfig
 }
@@ -50,6 +51,14 @@ type mysqlConfig struct {
 	DataBase    string
 	MaxOpenConn int
 	MaxIdleConn int
+}
+
+type mongoConfig struct {
+	ApplyURI        string
+	LocalThreshold  int
+	MaxConnIdleTime int
+	MaxPoolSize     uint64
+	Timeout         int
 }
 
 type tradeConfig struct {

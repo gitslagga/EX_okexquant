@@ -2,7 +2,7 @@
 address = "0.0.0.0:8000"
 location = "Asia/Singapore"
 baseLogPath = "./log"
-serverName = "quant"
+serverName = "quantity"
 serviceName = "all"
 serverTag = "main"
 
@@ -19,7 +19,7 @@ FileMaxBackups = 10
 FileMaxAge = 10
 
 [redis]
-address = "172.31.177.158:6379"
+address = "127.0.0.1:6379"
 password = "foobared"
 maxActive = 10
 maxIdle = 5
@@ -28,10 +28,17 @@ idleMills = 0
 [mysql]
 user = "slagga"
 password = "slagga"
-address = "172.31.177.158:3306"
-dataBase = "exchange_quant"
+address = "127.0.0.1:3306"
+dataBase = "main_quantity"
 maxOpenConn = 10
 maxIdleConn = 3
+
+[mongo]
+applyURI = "mongodb://admin:123456@127.0.0.1:27017"
+localThreshold = 3
+maxConnIdleTime = 5
+maxPoolSize = 200
+timeout = 10
 
 [trade]
 endpoint = "https://www.okex.com"

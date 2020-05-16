@@ -12,8 +12,10 @@ func InitRouter(r *gin.Engine) {
 	/****************************** 交割合约 *********************************/
 	r.POST("/api/futures/instruments/ticker", GetFuturesInstrumentsTicker)
 	r.POST("/api/futures/position/:instrument_id", GetFuturesInstrumentPosition)
+	r.POST("/api/futures/accounts/:underlying", GetFuturesUnderlyingAccount)
 	r.POST("/api/futures/get/leverage/:underlying", GetFuturesUnderlyingLeverage)
 	r.POST("/api/futures/set/leverage/:underlying/:leverage", SetFuturesUnderlyingLeverage)
+	r.POST("/api/futures/ledger/:underlying", GetFuturesUnderlyingLedger)
 }
 
 /**
@@ -54,6 +56,38 @@ func GetFuturesInstrumentPosition(c *gin.Context) {
 	}
 
 	list, err := db.GetFuturesInstrumentPosition(instrumentID)
+	if err != nil {
+		out.ErrorCode = data.EC_NETWORK_ERR
+		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	out.ErrorCode = data.EC_NONE.Code()
+	out.ErrorMessage = data.EC_NONE.String()
+	out.Data = list
+
+	c.JSON(http.StatusOK, out)
+	return
+}
+
+/**
+单个币种合约账户信息
+*/
+func GetFuturesUnderlyingAccount(c *gin.Context) {
+	out := data.CommonResp{}
+
+	underlying := c.Param("underlying")
+	mylog.Logger.Info().Msgf("[Task Service] GetFuturesUnderlyingAccount request param: %s", underlying)
+
+	if underlying == "" {
+		out.ErrorCode = data.EC_PARAMS_ERR
+		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	list, err := db.GetFuturesUnderlyingAccount(underlying)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
@@ -119,6 +153,38 @@ func SetFuturesUnderlyingLeverage(c *gin.Context) {
 	}
 
 	list, err := db.SetFuturesUnderlyingLeverage(underlying, leverage)
+	if err != nil {
+		out.ErrorCode = data.EC_NETWORK_ERR
+		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	out.ErrorCode = data.EC_NONE.Code()
+	out.ErrorMessage = data.EC_NONE.String()
+	out.Data = list
+
+	c.JSON(http.StatusOK, out)
+	return
+}
+
+/**
+获取账单流水查询
+*/
+func GetFuturesUnderlyingLedger(c *gin.Context) {
+	out := data.CommonResp{}
+
+	underlying := c.Param("underlying")
+	mylog.Logger.Info().Msgf("[Task Service] GetFuturesUnderlyingLedger request param: %s", underlying)
+
+	if underlying == "" {
+		out.ErrorCode = data.EC_PARAMS_ERR
+		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	list, err := db.GetFuturesUnderlyingLedger(underlying)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)

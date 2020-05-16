@@ -132,6 +132,28 @@ func GetFuturesInstrumentPosition(instrumentID string) (interface{}, error) {
 	return *position, nil
 }
 
+func GetFuturesUnderlyingAccount(underlying string) (interface{}, error) {
+	account, err := trade.OKexClient.GetFuturesAccountsByCurrency(underlying)
+	if err != nil {
+		mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsPosition] trade OKexClient failed, err=%v, account=%v", err, account)
+		return nil, err
+	}
+
+	collection = client.Database("main_quantify").Collection("futures_underlying_account")
+	size, err = collection.CountDocuments(getContext(), bson.D{})
+	if err != nil {
+		mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsPosition] collection CountDocuments failed, err=%v, collection=%v", err, collection)
+		return nil, err
+	}
+
+	if size <= 0 {
+		_, _ = collection.InsertOne(getContext(), account)
+	}
+	_, _ = collection.UpdateOne(getContext(), bson.D{{"underlying", underlying}}, account)
+
+	return account, nil
+}
+
 func GetFuturesUnderlyingLeverage(underlying string) (interface{}, error) {
 	leverage, err := trade.OKexClient.GetFuturesAccountsLeverage(underlying)
 	if err != nil {
@@ -139,7 +161,7 @@ func GetFuturesUnderlyingLeverage(underlying string) (interface{}, error) {
 		return nil, err
 	}
 
-	collection = client.Database("main_quantify").Collection("futures_instruments_leverage")
+	collection = client.Database("main_quantify").Collection("futures_underlying_leverage")
 	size, err = collection.CountDocuments(getContext(), bson.D{})
 	if size <= 0 {
 		_, _ = collection.InsertOne(getContext(), leverage)
@@ -156,7 +178,7 @@ func SetFuturesUnderlyingLeverage(underlying, leverage string) (interface{}, err
 		return nil, err
 	}
 
-	collection = client.Database("main_quantify").Collection("futures_instruments_leverage")
+	collection = client.Database("main_quantify").Collection("futures_underlying_leverage")
 	size, err = collection.CountDocuments(getContext(), bson.D{})
 	if size <= 0 {
 		_, _ = collection.InsertOne(getContext(), resp)
@@ -164,4 +186,26 @@ func SetFuturesUnderlyingLeverage(underlying, leverage string) (interface{}, err
 	_, _ = collection.UpdateOne(getContext(), bson.D{{"underlying", underlying}}, resp)
 
 	return resp, nil
+}
+
+func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
+	ledger, err := trade.OKexClient.GetFuturesAccountsLedgerByCurrency(underlying, nil)
+	if err != nil {
+		mylog.Logger.Fatal().Msgf("[GetFuturesUnderlyingLedger] trade OKexClient failed, err=%v, ledger=%v", err, ledger)
+		return nil, err
+	}
+
+	collection = client.Database("main_quantify").Collection("futures_underlying_ledger")
+	size, err = collection.CountDocuments(getContext(), bson.D{})
+	if err != nil {
+		mylog.Logger.Fatal().Msgf("[GetFuturesUnderlyingLedger] collection CountDocuments failed, err=%v, collection=%v", err, collection)
+		return nil, err
+	}
+
+	if size <= 0 {
+		_, _ = collection.InsertOne(getContext(), ledger)
+	}
+	_, _ = collection.UpdateOne(getContext(), bson.D{{"underlying", underlying}}, ledger)
+
+	return ledger, nil
 }

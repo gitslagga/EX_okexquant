@@ -48,8 +48,7 @@ func CloseMongoCli() {
 
 func getContext() context.Context {
 	timeout := config.Config.Mongo.Timeout
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 
 	return ctx
 }

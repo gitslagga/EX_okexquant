@@ -55,8 +55,13 @@ func getContext() context.Context {
 
 func GetFuturesInstrumentsTicker() (interface{}, error) {
 	collection = client.Database("main_quantify").Collection("futures_instruments_ticker")
-	cursor, err = collection.Find(getContext(), bson.D{})
-	if err == mongo.ErrNoDocuments {
+	size, err = collection.CountDocuments(getContext(), bson.D{})
+	if err != nil {
+		mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsTicker] collection CountDocuments failed, err=%v, size=%v", err, size)
+		return nil, err
+	}
+
+	if size <= 0 {
 		list, err := trade.OKexClient.GetAccountCurrencies()
 		if err != nil {
 			mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsTicker] OKexClient GetAccountCurrencies failed, err=%v, list=%v", err, list)
@@ -72,6 +77,7 @@ func GetFuturesInstrumentsTicker() (interface{}, error) {
 		return dataArray, nil
 	}
 
+	cursor, err = collection.Find(getContext(), bson.D{})
 	if err != nil {
 		mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsTicker] collection Find failed, err=%v, cursor=%v", err, cursor)
 		return nil, err

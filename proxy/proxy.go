@@ -17,9 +17,12 @@ const (
 
 var httpClient *http.Client
 
-func Init() {
+func InitProxy() {
 	httpClient = createHTTPClient()
-	defer httpClient.CloseIdleConnections()
+}
+
+func CloseProxy() {
+	httpClient.CloseIdleConnections()
 }
 
 func createHTTPClient() *http.Client {

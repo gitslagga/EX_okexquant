@@ -2,14 +2,14 @@ package trade
 
 import (
 	"EX_okexquant/config"
-	"EX_okexquant/mylog"
+	"fmt"
 )
 
 var OKexClient *Client
 
-func Init() {
+func InitTrade() {
 	OKexClient = newOKExClient()
-	mylog.Logger.Error().Msgf("newOKExClient Init success")
+	fmt.Println("[InitTrade] trade success.")
 }
 
 func newOKExClient() *Client {

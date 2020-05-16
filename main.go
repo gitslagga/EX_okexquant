@@ -35,14 +35,16 @@ func main() {
 	}
 	mylog.ConfigLoggers()
 
-	//proxy.Init()
+	//proxy.InitProxy()
+	//defer proxy.CloseProxy()
 	//db.InitRedisCli()
 	//defer db.CloseRedisCli()
 	//db.InitMysqlCli()
 	//defer db.CloseMysqlCli()
 
-	trade.Init()
+	trade.InitTrade()
 	db.InitMongoCli()
+	defer db.CloseMongoCli()
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()

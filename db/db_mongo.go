@@ -56,28 +56,6 @@ func getContext() context.Context {
 
 func GetFuturesInstrumentsTicker() (interface{}, error) {
 	collection = client.Database("main_quantify").Collection("futures_instruments_ticker")
-	size, err = collection.CountDocuments(getContext(), bson.D{})
-	if err != nil {
-		mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsTicker] collection CountDocuments failed, err=%v, size=%v", err, size)
-		return nil, err
-	}
-
-	if size <= 0 {
-		list, err := trade.OKexClient.GetAccountCurrencies()
-		if err != nil {
-			mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsTicker] OKexClient GetAccountCurrencies failed, err=%v, list=%v", err, list)
-			return nil, err
-		}
-
-		var dataArray []interface{}
-		for k := range *list {
-			dataArray = append(dataArray, (*list)[k])
-		}
-
-		_, _ = collection.InsertMany(getContext(), dataArray)
-		return dataArray, nil
-	}
-
 	cursor, err = collection.Find(getContext(), bson.D{})
 	if err != nil {
 		mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsTicker] collection Find failed, err=%v, cursor=%v", err, cursor)
@@ -93,22 +71,6 @@ func GetFuturesInstrumentsTicker() (interface{}, error) {
 	}
 
 	return dataArray, nil
-}
-
-func ISExistsInstrumentsTicker(instrumentID string) bool {
-	collection = client.Database("main_quantify").Collection("futures_instruments_ticker")
-	size, err = collection.CountDocuments(getContext(), bson.D{{"instrument_id", instrumentID}})
-
-	if err != nil {
-		mylog.Logger.Fatal().Msgf("[ISExistsInstrumentsTicker] collection CountDocuments failed, err=%v, collection=%v", err, collection)
-		return false
-	}
-
-	if size <= 0 {
-		return false
-	}
-
-	return true
 }
 
 func GetFuturesInstrumentPosition(instrumentID string) (interface{}, error) {
@@ -155,40 +117,6 @@ func GetFuturesUnderlyingAccount(underlying string) (interface{}, error) {
 	return account, nil
 }
 
-func GetFuturesUnderlyingLeverage(underlying string) (interface{}, error) {
-	leverage, err := trade.OKexClient.GetFuturesAccountsLeverage(underlying)
-	if err != nil {
-		mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsPosition] trade OKexClient failed, err=%v, leverage=%v", err, leverage)
-		return nil, err
-	}
-
-	collection = client.Database("main_quantify").Collection("futures_underlying_leverage")
-	size, err = collection.CountDocuments(getContext(), bson.D{})
-	if size <= 0 {
-		_, _ = collection.InsertOne(getContext(), leverage)
-	}
-	_, _ = collection.UpdateOne(getContext(), bson.D{{"underlying", underlying}}, leverage)
-
-	return leverage, nil
-}
-
-func SetFuturesUnderlyingLeverage(underlying, leverage string) (interface{}, error) {
-	resp, err := trade.OKexClient.PostFuturesAccountsLeverage(underlying, leverage, nil)
-	if err != nil {
-		mylog.Logger.Fatal().Msgf("[SetFuturesUnderlyingLeverage] trade OKexClient failed, err=%v, resp=%v", err, resp)
-		return nil, err
-	}
-
-	collection = client.Database("main_quantify").Collection("futures_underlying_leverage")
-	size, err = collection.CountDocuments(getContext(), bson.D{})
-	if size <= 0 {
-		_, _ = collection.InsertOne(getContext(), resp)
-	}
-	_, _ = collection.UpdateOne(getContext(), bson.D{{"underlying", underlying}}, resp)
-
-	return resp, nil
-}
-
 func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
 	ledger, err := trade.OKexClient.GetFuturesAccountsLedgerByCurrency(underlying, nil)
 	if err != nil {
@@ -231,7 +159,7 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 	return *resp, nil
 }
 
-func CancelFuturesInstrumentOrder(userID, instrumentID, orderID string) (interface{}, error) {
+func CancelFuturesInstrumentOrder(instrumentID, orderID string) (interface{}, error) {
 	resp, err := trade.OKexClient.CancelFuturesInstrumentOrder(instrumentID, orderID)
 	if err != nil {
 		mylog.Logger.Fatal().Msgf("[CancelFuturesInstrumentOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
@@ -245,4 +173,62 @@ func CancelFuturesInstrumentOrder(userID, instrumentID, orderID string) (interfa
 	}
 
 	return resp, nil
+}
+
+func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
+
+	collection = client.Database("main_quantify").Collection("futures_instruments_users")
+	cursor, err = collection.Find(getContext(), bson.D{
+		{"user_id", userID},
+	})
+	if err != nil {
+		mylog.Logger.Fatal().Msgf("[GetFuturesOrders] collection Find failed, err=%v, cursor=%v", err, cursor)
+		return nil, err
+	}
+
+	defer cursor.Close(context.Background())
+
+	var record map[string]string
+	var recordArray []map[string]string
+	for cursor.Next(context.Background()) {
+		_ = cursor.Decode(&record)
+
+		collection = client.Database("main_quantify").Collection("futures_instruments_orders")
+		cursor1, _ := collection.Find(getContext(), bson.D{
+			{"instrument_id", instrumentID},
+			{"order_id", record["order_id"]},
+		})
+
+		var record1 map[string]string
+		for cursor1.Next(context.Background()) {
+			_ = cursor1.Decode(&record1)
+			recordArray = append(recordArray, record1)
+		}
+	}
+
+	return recordArray, nil
+}
+
+func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
+
+	collection = client.Database("main_quantify").Collection("futures_instruments_fills")
+	cursor, err = collection.Find(getContext(), bson.D{
+		{"instrument_id", instrumentID},
+		{"order_id", orderID},
+	})
+	if err != nil {
+		mylog.Logger.Fatal().Msgf("[GetFuturesFills] collection Find failed, err=%v, cursor=%v", err, cursor)
+		return nil, err
+	}
+
+	defer cursor.Close(context.Background())
+
+	var record map[string]string
+	var recordArray []map[string]string
+	for cursor.Next(context.Background()) {
+		_ = cursor.Decode(&record)
+		recordArray = append(recordArray, record)
+	}
+
+	return recordArray, nil
 }

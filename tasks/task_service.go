@@ -13,12 +13,11 @@ func InitRouter(r *gin.Engine) {
 	r.POST("/api/futures/instruments/ticker", GetFuturesInstrumentsTicker)
 	r.POST("/api/futures/position/:instrument_id", GetFuturesInstrumentPosition)
 	r.POST("/api/futures/accounts/:underlying", GetFuturesUnderlyingAccount)
-	r.POST("/api/futures/get/leverage/:underlying", GetFuturesUnderlyingLeverage)
-	r.POST("/api/futures/set/leverage/:underlying/:leverage", SetFuturesUnderlyingLeverage)
 	r.POST("/api/futures/ledger/:underlying", GetFuturesUnderlyingLedger)
 	r.POST("/api/futures/order", PostFuturesOrder)
 	r.POST("/api/futures/cancel_order/:instrument_id/:order_id", CancelFuturesInstrumentOrder)
-	//r.POST("/api/futures/orders/:instrument_id/:order_id", )
+	r.POST("/api/futures/orders/:user_id/:instrument_id", GetFuturesOrders)
+	r.POST("/api/futures/fills/:instrument_id/:order_id", GetFuturesFills)
 }
 
 /**
@@ -51,7 +50,7 @@ func GetFuturesInstrumentPosition(c *gin.Context) {
 	instrumentID := c.Param("instrument_id")
 	mylog.Logger.Info().Msgf("[Task Service] GetFuturesPosition request param: %s", instrumentID)
 
-	if !db.ISExistsInstrumentsTicker(instrumentID) {
+	if instrumentID == "" {
 		out.ErrorCode = data.EC_PARAMS_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
 		c.JSON(http.StatusBadRequest, out)
@@ -91,71 +90,6 @@ func GetFuturesUnderlyingAccount(c *gin.Context) {
 	}
 
 	list, err := db.GetFuturesUnderlyingAccount(underlying)
-	if err != nil {
-		out.ErrorCode = data.EC_NETWORK_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
-		c.JSON(http.StatusBadRequest, out)
-		return
-	}
-
-	out.ErrorCode = data.EC_NONE.Code()
-	out.ErrorMessage = data.EC_NONE.String()
-	out.Data = list
-
-	c.JSON(http.StatusOK, out)
-	return
-}
-
-/**
-获取交割合约杠杆倍数
-*/
-func GetFuturesUnderlyingLeverage(c *gin.Context) {
-	out := data.CommonResp{}
-
-	underlying := c.Param("underlying")
-	mylog.Logger.Info().Msgf("[Task Service] GetFuturesUnderlyingLeverage request param: %s", underlying)
-
-	if underlying == "" {
-		out.ErrorCode = data.EC_PARAMS_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
-		c.JSON(http.StatusBadRequest, out)
-		return
-	}
-
-	list, err := db.GetFuturesUnderlyingLeverage(underlying)
-	if err != nil {
-		out.ErrorCode = data.EC_NETWORK_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
-		c.JSON(http.StatusBadRequest, out)
-		return
-	}
-
-	out.ErrorCode = data.EC_NONE.Code()
-	out.ErrorMessage = data.EC_NONE.String()
-	out.Data = list
-
-	c.JSON(http.StatusOK, out)
-	return
-}
-
-/**
-设置交割合约杠杆倍数
-*/
-func SetFuturesUnderlyingLeverage(c *gin.Context) {
-	out := data.CommonResp{}
-
-	underlying := c.Param("underlying")
-	leverage := c.Param("leverage")
-	mylog.Logger.Info().Msgf("[Task Service] SetFuturesUnderlyingLeverage request param: %s, %s", underlying, leverage)
-
-	if underlying == "" || leverage == "" {
-		out.ErrorCode = data.EC_PARAMS_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
-		c.JSON(http.StatusBadRequest, out)
-		return
-	}
-
-	list, err := db.SetFuturesUnderlyingLeverage(underlying, leverage)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
@@ -243,17 +177,85 @@ func PostFuturesOrder(c *gin.Context) {
 */
 func CancelFuturesInstrumentOrder(c *gin.Context) {
 	out := data.CommonResp{}
-	orderParam := data.CancelOrderParam{}
 
-	if err := c.ShouldBindJSON(&orderParam); err != nil {
-		mylog.Logger.Info().Msgf("[Task Service] PostFuturesOrder request orderParam: %s", orderParam)
+	instrumentID := c.Param("instrument_id")
+	orderID := c.Param("order_id")
+	mylog.Logger.Info().Msgf("[Task Service] CancelFuturesInstrumentOrder request param: %s, %s", instrumentID, orderID)
+
+	if instrumentID == "" || orderID == "" {
 		out.ErrorCode = data.EC_PARAMS_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
-	list, err := db.CancelFuturesInstrumentOrder(orderParam.UserID, orderParam.InstrumentID, orderParam.OrderID)
+	list, err := db.CancelFuturesInstrumentOrder(instrumentID, orderID)
+	if err != nil {
+		out.ErrorCode = data.EC_NETWORK_ERR
+		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	out.ErrorCode = data.EC_NONE.Code()
+	out.ErrorMessage = data.EC_NONE.String()
+	out.Data = list
+
+	c.JSON(http.StatusOK, out)
+	return
+}
+
+/**
+交割合约获取订单列表
+*/
+func GetFuturesOrders(c *gin.Context) {
+	out := data.CommonResp{}
+
+	userID := c.Param("user_id")
+	instrumentID := c.Param("instrument_id")
+	mylog.Logger.Info().Msgf("[Task Service] GetFuturesOrders request param: %s, %s", userID, instrumentID)
+
+	if userID == "" || instrumentID == "" {
+		out.ErrorCode = data.EC_PARAMS_ERR
+		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	list, err := db.GetFuturesOrders(userID, instrumentID)
+	if err != nil {
+		out.ErrorCode = data.EC_NETWORK_ERR
+		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	out.ErrorCode = data.EC_NONE.Code()
+	out.ErrorMessage = data.EC_NONE.String()
+	out.Data = list
+
+	c.JSON(http.StatusOK, out)
+	return
+}
+
+/**
+交割合约获取成交明细
+*/
+func GetFuturesFills(c *gin.Context) {
+	out := data.CommonResp{}
+
+	instrumentID := c.Param("instrument_id")
+	orderID := c.Param("order_id")
+	mylog.Logger.Info().Msgf("[Task Service] GetFuturesFills request param: %s, %s", instrumentID, orderID)
+
+	if instrumentID == "" || orderID == "" {
+		out.ErrorCode = data.EC_PARAMS_ERR
+		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	list, err := db.GetFuturesFills(instrumentID, orderID)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)

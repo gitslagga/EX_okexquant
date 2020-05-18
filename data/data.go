@@ -73,9 +73,3 @@ type OrderParam struct {
 	OrderType    string `json:"order_type"`
 	MatchPrice   string `json:"match_price"`
 }
-
-type CancelOrderParam struct {
-	UserID       string `json:"user_id" binding:"required"`
-	InstrumentID string `json:"instrument_id" binding:"required"`
-	OrderID      string `json:"order_id" binding:"order_id"`
-}

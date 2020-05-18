@@ -5,6 +5,7 @@ import (
 	"EX_okexquant/mylog"
 	"EX_okexquant/trade"
 	"context"
+	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -69,8 +70,8 @@ func GetFuturesInstrumentsTicker() (interface{}, error) {
 		}
 
 		var dataArray []interface{}
-		for i := 0; i < len(*list); i++ {
-			dataArray = append(dataArray, (*list)[i])
+		for k := range *list {
+			dataArray = append(dataArray, (*list)[k])
 		}
 
 		_, _ = collection.InsertMany(getContext(), dataArray)
@@ -208,4 +209,40 @@ func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
 	_, _ = collection.UpdateOne(getContext(), bson.D{{"underlying", underlying}}, ledger)
 
 	return ledger, nil
+}
+
+func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalParams map[string]string) (interface{}, error) {
+	resp, err := trade.OKexClient.PostFuturesOrder(instrumentID, oType, price, size, optionalParams)
+	if err != nil {
+		mylog.Logger.Fatal().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
+		return nil, err
+	}
+
+	if (*resp)["result"] != true {
+		err = errors.New((*resp)["error_message"].(string))
+		mylog.Logger.Fatal().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
+		return nil, err
+	}
+
+	(*resp)["user_id"] = userID
+	collection = client.Database("main_quantify").Collection("futures_instruments_users")
+	_, _ = collection.InsertOne(getContext(), *resp)
+
+	return *resp, nil
+}
+
+func CancelFuturesInstrumentOrder(userID, instrumentID, orderID string) (interface{}, error) {
+	resp, err := trade.OKexClient.CancelFuturesInstrumentOrder(instrumentID, orderID)
+	if err != nil {
+		mylog.Logger.Fatal().Msgf("[CancelFuturesInstrumentOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
+		return nil, err
+	}
+
+	if resp["result"] != true {
+		err = errors.New(resp["error_message"].(string))
+		mylog.Logger.Fatal().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
+		return nil, err
+	}
+
+	return resp, nil
 }

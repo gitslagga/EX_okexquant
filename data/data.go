@@ -62,3 +62,20 @@ type CommonResp struct {
 	ErrorMessage string      `json:"error_message" form:"error_message"`
 	Data         interface{} `json:"data" form:"data"`
 }
+
+/*********************************** futures trading *************************************/
+type OrderParam struct {
+	UserID       string `json:"user_id" binding:"required"`
+	InstrumentID string `json:"instrument_id" binding:"required"`
+	Type         string `json:"type" binding:"required"`
+	Price        string `json:"price"`
+	Size         string `json:"size" binding:"required"`
+	OrderType    string `json:"order_type"`
+	MatchPrice   string `json:"match_price"`
+}
+
+type CancelOrderParam struct {
+	UserID       string `json:"user_id" binding:"required"`
+	InstrumentID string `json:"instrument_id" binding:"required"`
+	OrderID      string `json:"order_id" binding:"order_id"`
+}

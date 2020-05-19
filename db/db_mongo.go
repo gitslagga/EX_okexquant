@@ -99,7 +99,10 @@ func GetFuturesUnderlyingAccount(underlying string) (interface{}, error) {
 }
 
 func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
-	ledger, err := trade.OKexClient.GetFuturesAccountsLedgerByCurrency(underlying, nil)
+	optionalParams := map[string]string{}
+	optionalParams["limit"] = "100"
+
+	ledger, err := trade.OKexClient.GetFuturesAccountsLedgerByCurrency(underlying, optionalParams)
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetFuturesUnderlyingLedger] trade OKexClient failed, err=%v, ledger=%v", err, ledger)
 		return nil, err

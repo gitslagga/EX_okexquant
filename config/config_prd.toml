@@ -47,7 +47,7 @@ apiKey = "d24d56e7-d9a7-49d5-ae24-c5aa9aaba697"
 secretKey = "9B146B2FF53F325F7F77B3296E339E89"
 passphrase = "slagga"
 timeoutSecond = 10
-isPrint = true
+isPrint = false
 i18n = "en_US"
 tradePwd = "f4bf0913e77fc631c8faab17076ce259"   #test1
 

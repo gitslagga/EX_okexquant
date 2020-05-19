@@ -115,8 +115,8 @@ func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
 			{"ledger_id", v["ledger_id"]},
 		}).Decode(&record)
 
-		if err == mongo.ErrNoDocuments || record == nil {
-			_, _ = collection.InsertOne(getContext(), record)
+		if err == mongo.ErrNoDocuments {
+			_, _ = collection.InsertOne(getContext(), v)
 		}
 	}
 

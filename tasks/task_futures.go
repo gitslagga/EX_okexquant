@@ -1,30 +1,32 @@
 package tasks
 
 import (
+	"EX_okexquant/db"
 	"fmt"
+	"time"
 )
 
 func InitFutures() {
 	fmt.Println("[Tasks] futures init ...")
 
-	//StartGetOrdersTask()
+	StartFixOrdersTask()
 
 	fmt.Println("[Tasks] futures init success.")
 }
 
-//
-//func StartGetOrdersTask() {
-//	db.InsertFuturesInstrumentsTicker()
-//
-//	go func() {
-//		timer := time.NewTicker(1 * time.Second)
-//		for {
-//			select {
-//			case <-timer.C:
-//				db.InsertFuturesInstrumentsTicker()
-//			}
-//		}
-//	}()
-//
-//	fmt.Println("[Tasks] StartGetOrdersTask succeed.")
-//}
+//TODO fix order state task
+func StartFixOrdersTask() {
+	db.FixFuturesInstrumentsOrders()
+
+	go func() {
+		timer := time.NewTicker(2 * time.Second)
+		for {
+			select {
+			case <-timer.C:
+				db.FixFuturesInstrumentsOrders()
+			}
+		}
+	}()
+
+	fmt.Println("[Tasks] StartFixOrdersTask succeed.")
+}

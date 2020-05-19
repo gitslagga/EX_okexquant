@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
@@ -23,6 +24,12 @@ var (
 	cursor       *mongo.Cursor
 	size         int64
 )
+
+type bsonData struct {
+	//struct里面获取ObjectID
+	HowieId primitive.ObjectID `bson:"_id"`
+	OrderID string             `bson:"order_id"`
+}
 
 func InitMongoCli() {
 	uri := config.Config.Mongo.ApplyURI
@@ -165,7 +172,8 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 	collection = client.Database("main_quantify").Collection("futures_instruments_users")
 	cursor, err = collection.Find(ctx, bson.D{
 		{"user_id", userID},
-	})
+		{"instrument_id", instrumentID},
+	}, options.Find().SetSort(bson.M{"_id": -1}))
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetFuturesOrders] collection Find failed, err=%v, cursor=%v", err, cursor)
 		return nil, err
@@ -173,7 +181,7 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 
 	defer cursor.Close(context.Background())
 
-	var record map[string]interface{}
+	var record bsonData
 	var recordArray []map[string]interface{}
 	var order map[string]interface{}
 	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
@@ -184,17 +192,19 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 			mylog.Logger.Error().Msgf("[GetFuturesOrders] cursor Decode failed, err=%v, record=%v", err, record)
 		}
 
+		mylog.Logger.Info().Msgf("[GetFuturesOrders] cursor Decode info, cursor=%v, record=%v", cursor, record)
+
 		size, _ = collection.CountDocuments(ctx, bson.D{
 			{"instrument_id", instrumentID},
-			{"order_id", record["order_id"]},
+			{"order_id", record.OrderID},
 		})
 		if size <= 0 {
-			insertFuturesInstrumentsOrder(ctx, instrumentID, record["order_id"].(string))
+			insertFuturesInstrumentsOrder(ctx, instrumentID, record.OrderID)
 		}
 
 		_ = collection.FindOne(ctx, bson.D{
 			{"instrument_id", instrumentID},
-			{"order_id", record["order_id"]},
+			{"order_id", record.OrderID},
 		}).Decode(&order)
 
 		recordArray = append(recordArray, order)

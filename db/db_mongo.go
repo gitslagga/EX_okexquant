@@ -184,7 +184,7 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 			{"order_id", record["order_id"]},
 		})
 		if size <= 0 {
-			insertFuturesInstrumentsOrder(instrumentID, record["order_id"])
+			insertFuturesInstrumentsOrder(collection, instrumentID, record["order_id"])
 		}
 
 		var order map[string]string
@@ -200,16 +200,16 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 }
 
 func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
+	collection = client.Database("main_quantify").Collection("futures_instruments_fills")
 	size, err = collection.CountDocuments(getContext(), bson.D{})
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetFuturesFills] collection CountDocuments failed, err=%v, size=%v", err, size)
 		return nil, err
 	}
 	if size <= 0 {
-		insertFuturesInstrumentsFills(instrumentID, orderID)
+		insertFuturesInstrumentsFills(collection, instrumentID, orderID)
 	}
 
-	collection = client.Database("main_quantify").Collection("futures_instruments_fills")
 	cursor, err = collection.Find(getContext(), bson.D{
 		{"instrument_id", instrumentID},
 		{"order_id", orderID},
@@ -231,18 +231,20 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	return recordArray, nil
 }
 
-func insertFuturesInstrumentsOrder(instrumentID, orderID string) {
+func insertFuturesInstrumentsOrder(collection *mongo.Collection, instrumentID, orderID string) {
 	order, err := trade.OKexClient.GetFuturesOrder(instrumentID, orderID)
 	if err != nil {
 		mylog.Logger.Error().Msgf("insertFuturesInstrumentsOrder error! err:%v", err)
 	}
 
-	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
 	_, _ = collection.InsertOne(getContext(), order)
 }
 
-func insertFuturesInstrumentsFills(instrumentID, orderID string) {
-	fills, err := trade.OKexClient.GetFuturesFills(instrumentID, orderID, nil)
+func insertFuturesInstrumentsFills(collection *mongo.Collection, instrumentID, orderID string) {
+	optionalParams := map[string]string{}
+	optionalParams["limit"] = "100"
+
+	fills, err := trade.OKexClient.GetFuturesFills(instrumentID, orderID, optionalParams)
 	if err != nil {
 		mylog.Logger.Error().Msgf("insertFuturesInstrumentsFills error! err:%v", err)
 		return
@@ -253,7 +255,6 @@ func insertFuturesInstrumentsFills(instrumentID, orderID string) {
 		data = append(data, v)
 	}
 
-	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
 	_, _ = collection.InsertMany(getContext(), data)
 }
 

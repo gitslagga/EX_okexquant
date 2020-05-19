@@ -37,7 +37,7 @@ func GetFuturesInstrumentPosition(c *gin.Context) {
 	list, err := db.GetFuturesInstrumentPosition(instrumentID)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
+		out.ErrorMessage = err.Error()
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
@@ -69,7 +69,7 @@ func GetFuturesUnderlyingAccount(c *gin.Context) {
 	list, err := db.GetFuturesUnderlyingAccount(underlying)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
+		out.ErrorMessage = err.Error()
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
@@ -101,7 +101,7 @@ func GetFuturesUnderlyingLedger(c *gin.Context) {
 	list, err := db.GetFuturesUnderlyingLedger(underlying)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
+		out.ErrorMessage = err.Error()
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
@@ -136,7 +136,7 @@ func PostFuturesOrder(c *gin.Context) {
 	list, err := db.PostFuturesOrder(orderParam.UserID, orderParam.InstrumentID, orderParam.Type, orderParam.Price, orderParam.Size, optionParam)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
+		out.ErrorMessage = err.Error()
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
@@ -169,7 +169,7 @@ func CancelFuturesInstrumentOrder(c *gin.Context) {
 	list, err := db.CancelFuturesInstrumentOrder(instrumentID, orderID)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
+		out.ErrorMessage = err.Error()
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
@@ -202,7 +202,7 @@ func GetFuturesOrders(c *gin.Context) {
 	list, err := db.GetFuturesOrders(userID, instrumentID)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
+		out.ErrorMessage = err.Error()
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
@@ -235,7 +235,7 @@ func GetFuturesFills(c *gin.Context) {
 	list, err := db.GetFuturesFills(instrumentID, orderID)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
+		out.ErrorMessage = err.Error()
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}

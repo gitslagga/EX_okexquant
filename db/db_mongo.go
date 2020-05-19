@@ -57,14 +57,14 @@ func getContext() context.Context {
 func GetFuturesInstrumentPosition(instrumentID string) (interface{}, error) {
 	position, err := trade.OKexClient.GetFuturesInstrumentPosition(instrumentID)
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsPosition] trade OKexClient failed, err=%v, position=%v", err, position)
+		mylog.Logger.Error().Msgf("[GetFuturesInstrumentsPosition] trade OKexClient failed, err=%v, position=%v", err, position)
 		return nil, err
 	}
 
 	collection = client.Database("main_quantify").Collection("futures_instruments_position")
 	size, err = collection.CountDocuments(getContext(), bson.D{})
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[InsertFuturesInstrumentsTicker] collection CountDocuments failed, err=%v, collection=%v", err, collection)
+		mylog.Logger.Error().Msgf("[InsertFuturesInstrumentsTicker] collection CountDocuments failed, err=%v, collection=%v", err, collection)
 		return nil, err
 	}
 
@@ -79,14 +79,14 @@ func GetFuturesInstrumentPosition(instrumentID string) (interface{}, error) {
 func GetFuturesUnderlyingAccount(underlying string) (interface{}, error) {
 	account, err := trade.OKexClient.GetFuturesAccountsByCurrency(underlying)
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsPosition] trade OKexClient failed, err=%v, account=%v", err, account)
+		mylog.Logger.Error().Msgf("[GetFuturesInstrumentsPosition] trade OKexClient failed, err=%v, account=%v", err, account)
 		return nil, err
 	}
 
 	collection = client.Database("main_quantify").Collection("futures_underlying_account")
 	size, err = collection.CountDocuments(getContext(), bson.D{})
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsPosition] collection CountDocuments failed, err=%v, collection=%v", err, collection)
+		mylog.Logger.Error().Msgf("[GetFuturesInstrumentsPosition] collection CountDocuments failed, err=%v, collection=%v", err, collection)
 		return nil, err
 	}
 
@@ -101,14 +101,14 @@ func GetFuturesUnderlyingAccount(underlying string) (interface{}, error) {
 func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
 	ledger, err := trade.OKexClient.GetFuturesAccountsLedgerByCurrency(underlying, nil)
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[GetFuturesUnderlyingLedger] trade OKexClient failed, err=%v, ledger=%v", err, ledger)
+		mylog.Logger.Error().Msgf("[GetFuturesUnderlyingLedger] trade OKexClient failed, err=%v, ledger=%v", err, ledger)
 		return nil, err
 	}
 
 	collection = client.Database("main_quantify").Collection("futures_underlying_ledger")
 	size, err = collection.CountDocuments(getContext(), bson.D{})
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[GetFuturesUnderlyingLedger] collection CountDocuments failed, err=%v, collection=%v", err, collection)
+		mylog.Logger.Error().Msgf("[GetFuturesUnderlyingLedger] collection CountDocuments failed, err=%v, collection=%v", err, collection)
 		return nil, err
 	}
 
@@ -123,13 +123,13 @@ func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
 func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalParams map[string]string) (interface{}, error) {
 	resp, err := trade.OKexClient.PostFuturesOrder(instrumentID, oType, price, size, optionalParams)
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
+		mylog.Logger.Error().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
 		return nil, err
 	}
 
 	if (*resp)["result"] != true {
 		err = errors.New((*resp)["error_message"].(string))
-		mylog.Logger.Fatal().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
+		mylog.Logger.Error().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
 		return nil, err
 	}
 
@@ -144,13 +144,13 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 func CancelFuturesInstrumentOrder(instrumentID, orderID string) (interface{}, error) {
 	resp, err := trade.OKexClient.CancelFuturesInstrumentOrder(instrumentID, orderID)
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[CancelFuturesInstrumentOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
+		mylog.Logger.Error().Msgf("[CancelFuturesInstrumentOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
 		return nil, err
 	}
 
 	if resp["result"] != true {
 		err = errors.New(resp["error_message"].(string))
-		mylog.Logger.Fatal().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
+		mylog.Logger.Error().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
 		return nil, err
 	}
 
@@ -164,7 +164,7 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 		{"user_id", userID},
 	})
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[GetFuturesOrders] collection Find failed, err=%v, cursor=%v", err, cursor)
+		mylog.Logger.Error().Msgf("[GetFuturesOrders] collection Find failed, err=%v, cursor=%v", err, cursor)
 		return nil, err
 	}
 
@@ -199,7 +199,7 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	size, err = collection.CountDocuments(getContext(), bson.D{})
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[GetFuturesFills] collection CountDocuments failed, err=%v, size=%v", err, size)
+		mylog.Logger.Error().Msgf("[GetFuturesFills] collection CountDocuments failed, err=%v, size=%v", err, size)
 		return nil, err
 	}
 	if size <= 0 {
@@ -213,7 +213,7 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	})
 
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[GetFuturesFills] collection Find failed, err=%v, cursor=%v", err, cursor)
+		mylog.Logger.Error().Msgf("[GetFuturesFills] collection Find failed, err=%v, cursor=%v", err, cursor)
 		return nil, err
 	}
 
@@ -261,7 +261,7 @@ func FixFuturesInstrumentsOrders() {
 		"state", bson.D{{"$in", bson.A{"0", "1", "3", "4"}}},
 	}})
 	if err != nil {
-		mylog.Logger.Fatal().Msgf("[FixFuturesInstrumentsOrders] collection Find failed, err=%v, cursor=%v", err, cursor)
+		mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] collection Find failed, err=%v, cursor=%v", err, cursor)
 	}
 
 	defer cursor.Close(context.Background())

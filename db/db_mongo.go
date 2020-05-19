@@ -161,9 +161,9 @@ func CancelFuturesInstrumentOrder(instrumentID, orderID string) (interface{}, er
 }
 
 func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
-
+	ctx := context.Background()
 	collection = client.Database("main_quantify").Collection("futures_instruments_users")
-	cursor, err = collection.Find(getContext(), bson.D{
+	cursor, err = collection.Find(ctx, bson.D{
 		{"user_id", userID},
 	})
 	if err != nil {
@@ -184,15 +184,15 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 			mylog.Logger.Error().Msgf("[GetFuturesOrders] cursor Decode failed, err=%v, record=%v", err, record)
 		}
 
-		size, _ = collection.CountDocuments(getContext(), bson.D{
+		size, _ = collection.CountDocuments(ctx, bson.D{
 			{"instrument_id", instrumentID},
 			{"order_id", record["order_id"]},
 		})
 		if size <= 0 {
-			insertFuturesInstrumentsOrder(instrumentID, record["order_id"].(string))
+			insertFuturesInstrumentsOrder(ctx, instrumentID, record["order_id"].(string))
 		}
 
-		_ = collection.FindOne(getContext(), bson.D{
+		_ = collection.FindOne(ctx, bson.D{
 			{"instrument_id", instrumentID},
 			{"order_id", record["order_id"]},
 		}).Decode(&order)
@@ -204,17 +204,18 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 }
 
 func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
+	ctx := context.Background()
 	collection = client.Database("main_quantify").Collection("futures_instruments_fills")
-	size, err = collection.CountDocuments(getContext(), bson.D{})
+	size, err = collection.CountDocuments(ctx, bson.D{})
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetFuturesFills] collection CountDocuments failed, err=%v, size=%v", err, size)
 		return nil, err
 	}
 	if size <= 0 {
-		insertFuturesInstrumentsFills(instrumentID, orderID)
+		insertFuturesInstrumentsFills(ctx, instrumentID, orderID)
 	}
 
-	cursor, err = collection.Find(getContext(), bson.D{
+	cursor, err = collection.Find(ctx, bson.D{
 		{"instrument_id", instrumentID},
 		{"order_id", orderID},
 	})
@@ -235,7 +236,7 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	return recordArray, nil
 }
 
-func insertFuturesInstrumentsOrder(instrumentID, orderID string) {
+func insertFuturesInstrumentsOrder(ctx context.Context, instrumentID, orderID string) {
 	order, err := trade.OKexClient.GetFuturesOrder(instrumentID, orderID)
 
 	if err != nil {
@@ -244,11 +245,11 @@ func insertFuturesInstrumentsOrder(instrumentID, orderID string) {
 
 	if order != nil {
 		collection = client.Database("main_quantify").Collection("futures_instruments_orders")
-		_, _ = collection.InsertOne(getContext(), order)
+		_, _ = collection.InsertOne(ctx, order)
 	}
 }
 
-func insertFuturesInstrumentsFills(instrumentID, orderID string) {
+func insertFuturesInstrumentsFills(ctx context.Context, instrumentID, orderID string) {
 	optionalParams := map[string]string{}
 	optionalParams["limit"] = "100"
 
@@ -265,14 +266,16 @@ func insertFuturesInstrumentsFills(instrumentID, orderID string) {
 
 	if data != nil {
 		collection = client.Database("main_quantify").Collection("futures_instruments_fills")
-		_, _ = collection.InsertMany(getContext(), data)
+		_, _ = collection.InsertMany(ctx, data)
 	}
 }
 
 func FixFuturesInstrumentsOrders() {
+	ctx := context.Background()
+
 	//对未成交，部分成交，下单中，撤单中的订单进行修正
 	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
-	cursor, err = collection.Find(getContext(), bson.D{{
+	cursor, err = collection.Find(ctx, bson.D{{
 		"state", bson.D{{"$in", bson.A{"0", "1", "3", "4"}}},
 	}})
 	if err != nil {
@@ -285,7 +288,7 @@ func FixFuturesInstrumentsOrders() {
 		_ = cursor.Decode(&order)
 
 		realOrder, _ := trade.OKexClient.GetFuturesOrder(order["instrument_id"], order["order_id"])
-		_, _ = collection.UpdateOne(getContext(), bson.D{
+		_, _ = collection.UpdateOne(ctx, bson.D{
 			{"instrument_id", order["instrument_id"]},
 			{"order_id", order["order_id"]},
 		}, realOrder)

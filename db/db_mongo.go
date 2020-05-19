@@ -173,19 +173,23 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 
 	defer cursor.Close(context.Background())
 
-	record := make(map[string]string)
-	var recordArray []map[string]string
-	order := make(map[string]string)
+	var record map[string]interface{}
+	var recordArray []map[string]interface{}
+	var order map[string]interface{}
 	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
+
 	for cursor.Next(context.Background()) {
-		_ = cursor.Decode(&record)
+		err = cursor.Decode(&record)
+		if err != nil {
+			mylog.Logger.Error().Msgf("[GetFuturesOrders] cursor Decode failed, err=%v, record=%v", err, record)
+		}
 
 		size, _ = collection.CountDocuments(getContext(), bson.D{
 			{"instrument_id", instrumentID},
 			{"order_id", record["order_id"]},
 		})
 		if size <= 0 {
-			insertFuturesInstrumentsOrder(collection, instrumentID, record["order_id"])
+			insertFuturesInstrumentsOrder(instrumentID, record["order_id"].(string))
 		}
 
 		_ = collection.FindOne(getContext(), bson.D{
@@ -207,7 +211,7 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 		return nil, err
 	}
 	if size <= 0 {
-		insertFuturesInstrumentsFills(collection, instrumentID, orderID)
+		insertFuturesInstrumentsFills(instrumentID, orderID)
 	}
 
 	cursor, err = collection.Find(getContext(), bson.D{
@@ -221,8 +225,8 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	}
 
 	defer cursor.Close(context.Background())
-	var record map[string]string
-	var recordArray []map[string]string
+	var record map[string]interface{}
+	var recordArray []map[string]interface{}
 	for cursor.Next(context.Background()) {
 		_ = cursor.Decode(&record)
 		recordArray = append(recordArray, record)
@@ -231,7 +235,7 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	return recordArray, nil
 }
 
-func insertFuturesInstrumentsOrder(collection *mongo.Collection, instrumentID, orderID string) {
+func insertFuturesInstrumentsOrder(instrumentID, orderID string) {
 	order, err := trade.OKexClient.GetFuturesOrder(instrumentID, orderID)
 
 	if err != nil {
@@ -239,11 +243,12 @@ func insertFuturesInstrumentsOrder(collection *mongo.Collection, instrumentID, o
 	}
 
 	if order != nil {
+		collection = client.Database("main_quantify").Collection("futures_instruments_orders")
 		_, _ = collection.InsertOne(getContext(), order)
 	}
 }
 
-func insertFuturesInstrumentsFills(collection *mongo.Collection, instrumentID, orderID string) {
+func insertFuturesInstrumentsFills(instrumentID, orderID string) {
 	optionalParams := map[string]string{}
 	optionalParams["limit"] = "100"
 
@@ -259,6 +264,7 @@ func insertFuturesInstrumentsFills(collection *mongo.Collection, instrumentID, o
 	}
 
 	if data != nil {
+		collection = client.Database("main_quantify").Collection("futures_instruments_fills")
 		_, _ = collection.InsertMany(getContext(), data)
 	}
 }

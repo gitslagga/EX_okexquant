@@ -108,20 +108,16 @@ func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
 		return nil, err
 	}
 
+	var record map[string]interface{}
 	collection = client.Database("main_quantify").Collection("futures_underlying_ledger")
-	size, err = collection.CountDocuments(getContext(), bson.D{})
-	if err != nil {
-		mylog.Logger.Error().Msgf("[GetFuturesUnderlyingLedger] collection CountDocuments failed, err=%v, collection=%v", err, collection)
-		return nil, err
-	}
-
-	var recordArray []interface{}
 	for _, v := range ledger {
-		recordArray = append(recordArray, v)
-	}
+		err := collection.FindOne(getContext(), bson.D{
+			{"ledger_id", v["ledger_id"]},
+		}).Decode(&record)
 
-	if size <= 0 {
-		_, _ = collection.InsertMany(getContext(), recordArray)
+		if err == mongo.ErrNoDocuments || record == nil {
+			_, _ = collection.InsertOne(getContext(), record)
+		}
 	}
 
 	return ledger, nil

@@ -173,8 +173,9 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 
 	defer cursor.Close(context.Background())
 
-	var record map[string]string
+	record := make(map[string]string)
 	var recordArray []map[string]string
+	order := make(map[string]string)
 	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
 	for cursor.Next(context.Background()) {
 		_ = cursor.Decode(&record)
@@ -187,7 +188,6 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 			insertFuturesInstrumentsOrder(collection, instrumentID, record["order_id"])
 		}
 
-		var order map[string]string
 		_ = collection.FindOne(getContext(), bson.D{
 			{"instrument_id", instrumentID},
 			{"order_id", record["order_id"]},
@@ -233,11 +233,14 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 
 func insertFuturesInstrumentsOrder(collection *mongo.Collection, instrumentID, orderID string) {
 	order, err := trade.OKexClient.GetFuturesOrder(instrumentID, orderID)
+
 	if err != nil {
 		mylog.Logger.Error().Msgf("insertFuturesInstrumentsOrder error! err:%v", err)
 	}
 
-	_, _ = collection.InsertOne(getContext(), order)
+	if order != nil {
+		_, _ = collection.InsertOne(getContext(), order)
+	}
 }
 
 func insertFuturesInstrumentsFills(collection *mongo.Collection, instrumentID, orderID string) {
@@ -255,7 +258,9 @@ func insertFuturesInstrumentsFills(collection *mongo.Collection, instrumentID, o
 		data = append(data, v)
 	}
 
-	_, _ = collection.InsertMany(getContext(), data)
+	if data != nil {
+		_, _ = collection.InsertMany(getContext(), data)
+	}
 }
 
 func FixFuturesInstrumentsOrders() {

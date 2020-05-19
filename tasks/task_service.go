@@ -10,7 +10,6 @@ import (
 
 func InitRouter(r *gin.Engine) {
 	/****************************** 交割合约 *********************************/
-	r.POST("/api/futures/instruments/ticker", GetFuturesInstrumentsTicker)
 	r.POST("/api/futures/position/:instrument_id", GetFuturesInstrumentPosition)
 	r.POST("/api/futures/accounts/:underlying", GetFuturesUnderlyingAccount)
 	r.POST("/api/futures/ledger/:underlying", GetFuturesUnderlyingLedger)
@@ -18,28 +17,6 @@ func InitRouter(r *gin.Engine) {
 	r.POST("/api/futures/cancel_order/:instrument_id/:order_id", CancelFuturesInstrumentOrder)
 	r.POST("/api/futures/orders/:user_id/:instrument_id", GetFuturesOrders)
 	r.POST("/api/futures/fills/:instrument_id/:order_id", GetFuturesFills)
-}
-
-/**
-获取交割合约全部交易对
-*/
-func GetFuturesInstrumentsTicker(c *gin.Context) {
-	out := data.CommonResp{}
-
-	list, err := db.GetFuturesInstrumentsTicker()
-	if err != nil {
-		out.ErrorCode = data.EC_NETWORK_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_NETWORK_ERR)
-		c.JSON(http.StatusBadRequest, out)
-		return
-	}
-
-	out.ErrorCode = data.EC_NONE.Code()
-	out.ErrorMessage = data.EC_NONE.String()
-	out.Data = list
-
-	c.JSON(http.StatusOK, out)
-	return
 }
 
 /**

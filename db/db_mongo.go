@@ -54,25 +54,6 @@ func getContext() context.Context {
 	return ctx
 }
 
-func GetFuturesInstrumentsTicker() (interface{}, error) {
-	collection = client.Database("main_quantify").Collection("futures_instruments_ticker")
-	cursor, err = collection.Find(getContext(), bson.D{})
-	if err != nil {
-		mylog.Logger.Fatal().Msgf("[GetFuturesInstrumentsTicker] collection Find failed, err=%v, cursor=%v", err, cursor)
-		return nil, err
-	}
-	defer cursor.Close(context.Background())
-
-	var record map[string]string
-	var dataArray []map[string]string
-	for cursor.Next(context.Background()) {
-		_ = cursor.Decode(&record)
-		dataArray = append(dataArray, record)
-	}
-
-	return dataArray, nil
-}
-
 func GetFuturesInstrumentPosition(instrumentID string) (interface{}, error) {
 	position, err := trade.OKexClient.GetFuturesInstrumentPosition(instrumentID)
 	if err != nil {
@@ -153,6 +134,7 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 	}
 
 	(*resp)["user_id"] = userID
+	(*resp)["instrument_id"] = instrumentID
 	collection = client.Database("main_quantify").Collection("futures_instruments_users")
 	_, _ = collection.InsertOne(getContext(), *resp)
 
@@ -232,3 +214,62 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 
 	return recordArray, nil
 }
+
+/*********************************** task used module **************************************/
+//func InsertFuturesInstrumentsOrders() {
+//	collection = client.Database("main_quantify").Collection("futures_instruments_users")
+//	_, _ = collection.Find(getContext(), bson.D{{"", ""}})
+//
+//	ticker, err := trade.OKexClient.GetFuturesOrders()
+//	if err != nil {
+//		mylog.Logger.Error().Msgf("GetFuturesTicker error! err:%v", err)
+//		return
+//	}
+//
+//	var data []interface{}
+//	for _, v := range ticker {
+//		data = append(data, v)
+//	}
+//
+//	collection = client.Database("main_quantify").Collection("futures_instruments_ticker")
+//	size, err = collection.CountDocuments(getContext(), bson.D{})
+//	if err != nil {
+//		mylog.Logger.Fatal().Msgf("[InsertFuturesInstrumentsTicker] collection CountDocuments failed, err=%v, size=%v", err, size)
+//		return
+//	}
+//
+//	if size <= 0 {
+//		_, _ = collection.InsertMany(getContext(), data)
+//	}
+//
+//	for k, v := range data {
+//		_, _ = collection.UpdateOne(getContext(), bson.D{{"instrument_id", v.(map[string]string)["instrument_id"]}}, data[k])
+//	}
+//}
+//func InsertFuturesInstrumentsFills() {
+//	ticker, err := trade.OKexClient.GetFuturesFills()
+//	if err != nil {
+//		mylog.Logger.Error().Msgf("GetFuturesTicker error! err:%v", err)
+//		return
+//	}
+//
+//	var data []interface{}
+//	for _, v := range ticker {
+//		data = append(data, v)
+//	}
+//
+//	collection = client.Database("main_quantify").Collection("futures_instruments_ticker")
+//	size, err = collection.CountDocuments(getContext(), bson.D{})
+//	if err != nil {
+//		mylog.Logger.Fatal().Msgf("[InsertFuturesInstrumentsTicker] collection CountDocuments failed, err=%v, size=%v", err, size)
+//		return
+//	}
+//
+//	if size <= 0 {
+//		_, _ = collection.InsertMany(getContext(), data)
+//	}
+//
+//	for k, v := range data {
+//		_, _ = collection.UpdateOne(getContext(), bson.D{{"instrument_id", v.(map[string]string)["instrument_id"]}}, data[k])
+//	}
+//}

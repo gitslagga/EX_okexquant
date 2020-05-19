@@ -45,6 +45,7 @@ func main() {
 	trade.InitTrade()
 	db.InitMongoCli()
 	defer db.CloseMongoCli()
+	//tasks.InitFutures()
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()

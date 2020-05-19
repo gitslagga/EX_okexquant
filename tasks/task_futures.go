@@ -16,7 +16,6 @@ func InitFutures() {
 
 //TODO fix order state task
 func StartFixOrdersTask() {
-	db.FixFuturesInstrumentsOrders()
 
 	go func() {
 		timer := time.NewTicker(2 * time.Second)

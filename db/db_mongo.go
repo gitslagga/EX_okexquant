@@ -255,6 +255,24 @@ func insertFuturesInstrumentsFills(instrumentID, orderID string) {
 }
 
 func FixFuturesInstrumentsOrders() {
+	//对未成交，部分成交，下单中，撤单中的订单进行修正
 	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
-	collection.Find(getContext(), bson.D{})
+	cursor, err = collection.Find(getContext(), bson.D{{
+		"state", bson.D{{"$in", bson.A{"0", "1", "3", "4"}}},
+	}})
+	if err != nil {
+		mylog.Logger.Fatal().Msgf("[FixFuturesInstrumentsOrders] collection Find failed, err=%v, cursor=%v", err, cursor)
+	}
+
+	defer cursor.Close(context.Background())
+	var order map[string]string
+	for cursor.Next(context.Background()) {
+		_ = cursor.Decode(&order)
+
+		realOrder, _ := trade.OKexClient.GetFuturesOrder(order["instrument_id"], order["order_id"])
+		_, _ = collection.UpdateOne(getContext(), bson.D{
+			{"instrument_id", order["instrument_id"]},
+			{"order_id", order["order_id"]},
+		}, realOrder)
+	}
 }

@@ -19,22 +19,22 @@ FileMaxBackups = 10
 FileMaxAge = 10
 
 [redis]
-address = "172.31.177.158:6379"
+address = "127.0.0.1:6379"
 password = "foobared"
 maxActive = 10
 maxIdle = 5
 idleMills = 0
 
 [mysql]
-user = "slagga"
-password = "slagga"
-address = "172.31.177.158:3306"
+user = "root"
+password = "123456"
+address = "127.0.0.1:3306"
 dataBase = "main_quantity"
 maxOpenConn = 10
 maxIdleConn = 3
 
 [mongo]
-applyURI = "mongodb://admin:123456@192.168.1.66:27017"
+applyURI = "mongodb://admin:123456@127.0.0.1:27017"
 localThreshold = 3
 maxConnIdleTime = 5
 maxPoolSize = 200

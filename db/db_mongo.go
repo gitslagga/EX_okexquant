@@ -115,10 +115,14 @@ func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
 		return nil, err
 	}
 
-	if size <= 0 {
-		_, _ = collection.InsertOne(getContext(), ledger)
+	var recordArray []interface{}
+	for _, v := range ledger {
+		recordArray = append(recordArray, v)
 	}
-	_, _ = collection.UpdateOne(getContext(), bson.D{{"underlying", underlying}}, ledger)
+
+	if size <= 0 {
+		_, _ = collection.InsertMany(getContext(), recordArray)
+	}
 
 	return ledger, nil
 }

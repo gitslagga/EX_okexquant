@@ -13,6 +13,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.18.0
 	github.com/satori/go.uuid v1.2.0 // indirect
+	github.com/stretchr/testify v1.5.1
 	go.mongodb.org/mongo-driver v1.3.3
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )

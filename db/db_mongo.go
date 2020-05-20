@@ -217,8 +217,8 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	}
 
 	cursor, err = collection.Find(ctx, bson.D{
-		{"instrumentid", instrumentID},
-		{"orderid", orderID},
+		{"instrument_id", instrumentID},
+		{"order_id", orderID},
 	}, options.Find().SetSort(bson.M{"_id": -1}), options.Find().SetLimit(100))
 
 	if err != nil {

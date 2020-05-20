@@ -14,17 +14,11 @@ import (
 )
 
 var (
-	err          error
-	client       *mongo.Client
-	collection   *mongo.Collection
-	insertOneRes *mongo.InsertOneResult
-	deleteRes    *mongo.DeleteResult
-	updateRes    *mongo.UpdateResult
-	cursor       *mongo.Cursor
-	size         int64
+	client *mongo.Client
 )
 
 func InitMongoCli() {
+	var err error
 	uri := config.Config.Mongo.ApplyURI
 	localThreshold := config.Config.Mongo.LocalThreshold
 	maxConnIdleTime := config.Config.Mongo.MaxConnIdleTime
@@ -55,50 +49,67 @@ func getContext() context.Context {
 }
 
 func GetFuturesInstrumentPosition(instrumentID string) (interface{}, error) {
+	ctx := context.Background()
 	position, err := trade.OKexClient.GetFuturesInstrumentPosition(instrumentID)
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetFuturesInstrumentsPosition] trade OKexClient failed, err=%v, position=%v", err, position)
 		return nil, err
 	}
 
-	collection = client.Database("main_quantify").Collection("futures_instruments_position")
-	size, err = collection.CountDocuments(getContext(), bson.D{})
+	collection := client.Database("main_quantify").Collection("futures_instruments_position")
+	size, err := collection.CountDocuments(ctx, bson.D{})
 	if err != nil {
-		mylog.Logger.Error().Msgf("[InsertFuturesInstrumentsTicker] collection CountDocuments failed, err=%v, collection=%v", err, collection)
+		mylog.Logger.Error().Msgf("[InsertFuturesInstrumentsTicker] collection CountDocuments failed, err=%v", err)
 		return nil, err
 	}
 
 	if size <= 0 {
-		_, _ = collection.InsertOne(getContext(), *position)
+		insertResult, err := collection.InsertOne(ctx, *position)
+		if err != nil {
+			mylog.Logger.Error().Msgf("[InsertFuturesInstrumentsTicker] collection InsertOne failed, err=%v, insertResult:%v", err, insertResult)
+		}
 	}
-	_, _ = collection.UpdateOne(getContext(), bson.D{{"instrument_id", instrumentID}}, *position)
+
+	updateResult, err := collection.UpdateOne(ctx, bson.D{{"instrument_id", instrumentID}}, *position)
+	if err != nil {
+		mylog.Logger.Error().Msgf("[InsertFuturesInstrumentsTicker] collection UpdateOne failed, err=%v, updateResult:%v", err, updateResult)
+	}
 
 	return *position, nil
 }
 
 func GetFuturesUnderlyingAccount(underlying string) (interface{}, error) {
+	ctx := context.Background()
 	account, err := trade.OKexClient.GetFuturesAccountsByCurrency(underlying)
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetFuturesInstrumentsPosition] trade OKexClient failed, err=%v, account=%v", err, account)
 		return nil, err
 	}
 
-	collection = client.Database("main_quantify").Collection("futures_underlying_account")
-	size, err = collection.CountDocuments(getContext(), bson.D{})
+	collection := client.Database("main_quantify").Collection("futures_underlying_account")
+	size, err := collection.CountDocuments(ctx, bson.D{})
 	if err != nil {
-		mylog.Logger.Error().Msgf("[GetFuturesInstrumentsPosition] collection CountDocuments failed, err=%v, collection=%v", err, collection)
+		mylog.Logger.Error().Msgf("[GetFuturesInstrumentsPosition] collection CountDocuments failed, err=%v", err)
 		return nil, err
 	}
 
 	if size <= 0 {
-		_, _ = collection.InsertOne(getContext(), account)
+		insertResult, err := collection.InsertOne(ctx, account)
+		if err != nil {
+			mylog.Logger.Error().Msgf("[GetFuturesInstrumentsPosition] collection InsertOne failed, err=%v, insertResult:%v", err, insertResult)
+		}
 	}
-	_, _ = collection.UpdateOne(getContext(), bson.D{{"underlying", underlying}}, account)
+
+	updateResult, err := collection.UpdateOne(ctx, bson.D{{"underlying", underlying}}, account)
+	if err != nil {
+		mylog.Logger.Error().Msgf("[GetFuturesInstrumentsPosition] collection UpdateOne failed, err=%v, updateResult:%v", err, updateResult)
+	}
 
 	return account, nil
 }
 
 func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
+	ctx := context.Background()
 	optionalParams := map[string]string{}
 	optionalParams["limit"] = "100"
 
@@ -109,14 +120,17 @@ func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
 	}
 
 	var record map[string]interface{}
-	collection = client.Database("main_quantify").Collection("futures_underlying_ledger")
+	collection := client.Database("main_quantify").Collection("futures_underlying_ledger")
 	for _, v := range ledger {
-		err := collection.FindOne(getContext(), bson.D{
+		err := collection.FindOne(ctx, bson.D{
 			{"ledger_id", v["ledger_id"]},
 		}).Decode(&record)
 
 		if err == mongo.ErrNoDocuments || len(record) <= 0 {
-			_, _ = collection.InsertOne(getContext(), v)
+			insertResult, err := collection.InsertOne(ctx, v)
+			if err != nil {
+				mylog.Logger.Error().Msgf("[GetFuturesUnderlyingLedger] collection InsertOne failed, err=%v, insertResult:%v", err, insertResult)
+			}
 		}
 	}
 
@@ -138,8 +152,11 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 
 	(*resp)["user_id"] = userID
 	(*resp)["instrument_id"] = instrumentID
-	collection = client.Database("main_quantify").Collection("futures_instruments_users")
-	_, _ = collection.InsertOne(getContext(), *resp)
+	collection := client.Database("main_quantify").Collection("futures_instruments_users")
+	insertResult, err := collection.InsertOne(getContext(), *resp)
+	if err != nil {
+		mylog.Logger.Error().Msgf("[PostFuturesOrder] collection InsertOne failed, err=%v, insertResult:%v", err, insertResult)
+	}
 
 	return *resp, nil
 }
@@ -162,8 +179,8 @@ func CancelFuturesInstrumentOrder(instrumentID, orderID string) (interface{}, er
 
 func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 	ctx := context.Background()
-	collection = client.Database("main_quantify").Collection("futures_instruments_users")
-	cursor, err = collection.Find(ctx, bson.D{
+	collection := client.Database("main_quantify").Collection("futures_instruments_users")
+	cursor, err := collection.Find(ctx, bson.D{
 		{"user_id", userID},
 		{"instrument_id", instrumentID},
 	}, options.Find().SetSort(bson.M{"_id": -1}), options.Find().SetLimit(100))
@@ -180,12 +197,14 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 	for cursor.Next(ctx) {
 		orderID := cursor.Current.Lookup("order_id").StringValue()
 
-		//mylog.Logger.Info().Msgf("[GetFuturesOrders] cursor Decode info, cursor=%v, orderID=%v", cursor, orderID)
-
-		size, _ = collection.CountDocuments(ctx, bson.D{
+		size, err := collection.CountDocuments(ctx, bson.D{
 			{"instrument_id", instrumentID},
 			{"order_id", orderID},
 		})
+		if err != nil {
+			mylog.Logger.Error().Msgf("[GetFuturesOrders] collection CountDocuments failed, err=%v, size=%v", err, size)
+		}
+
 		if size <= 0 {
 			insertFuturesInstrumentsOrder(ctx, instrumentID, orderID)
 		}
@@ -196,7 +215,9 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 			{"order_id", orderID},
 		}).Decode(&order)
 
-		if err == nil {
+		if err != nil {
+			mylog.Logger.Error().Msgf("[GetFuturesOrders] collection FindOne failed, err=%v, order=%v", err, order)
+		} else {
 			recordArray = append(recordArray, order)
 		}
 	}
@@ -206,8 +227,8 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 
 func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	ctx := context.Background()
-	collection = client.Database("main_quantify").Collection("futures_instruments_fills")
-	size, err = collection.CountDocuments(ctx, bson.D{})
+	collection := client.Database("main_quantify").Collection("futures_instruments_fills")
+	size, err := collection.CountDocuments(ctx, bson.D{})
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetFuturesFills] collection CountDocuments failed, err=%v, size=%v", err, size)
 		return nil, err
@@ -216,7 +237,7 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 		insertFuturesInstrumentsFills(ctx, instrumentID, orderID)
 	}
 
-	cursor, err = collection.Find(ctx, bson.D{
+	cursor, err := collection.Find(ctx, bson.D{
 		{"instrument_id", instrumentID},
 		{"order_id", orderID},
 	}, options.Find().SetSort(bson.M{"_id": -1}), options.Find().SetLimit(100))
@@ -232,9 +253,9 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 		var record map[string]interface{}
 		err = cursor.Decode(&record)
 
-		mylog.Logger.Info().Msgf("[GetFuturesFills] cursor Decode info, cursor=%v, record=%v", cursor, record)
-
-		if err == nil {
+		if err != nil {
+			mylog.Logger.Error().Msgf("[GetFuturesFills] cursor Decode failed, err=%v, record=%v", err, record)
+		} else {
 			recordArray = append(recordArray, record)
 		}
 	}
@@ -244,14 +265,16 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 
 func insertFuturesInstrumentsOrder(ctx context.Context, instrumentID, orderID string) {
 	order, err := trade.OKexClient.GetFuturesOrder(instrumentID, orderID)
-
 	if err != nil {
-		mylog.Logger.Error().Msgf("insertFuturesInstrumentsOrder error! err:%v", err)
+		mylog.Logger.Error().Msgf("[insertFuturesInstrumentsOrder] trade OKexClient failed, err:%v, order:%v", err, order)
 	}
 
 	if len(order) > 0 {
-		collection = client.Database("main_quantify").Collection("futures_instruments_orders")
-		_, _ = collection.InsertOne(ctx, order)
+		collection := client.Database("main_quantify").Collection("futures_instruments_orders")
+		insertResult, err := collection.InsertOne(ctx, order)
+		if err != nil {
+			mylog.Logger.Error().Msgf("[insertFuturesInstrumentsOrder] collection InsertOne failed, err:%v, insertResult:%v", err, insertResult)
+		}
 	}
 }
 
@@ -261,7 +284,7 @@ func insertFuturesInstrumentsFills(ctx context.Context, instrumentID, orderID st
 
 	fills, err := trade.OKexClient.GetFuturesFills(instrumentID, orderID, optionalParams)
 	if err != nil {
-		mylog.Logger.Error().Msgf("insertFuturesInstrumentsFills error! err:%v", err)
+		mylog.Logger.Error().Msgf("[insertFuturesInstrumentsFills] trade OKexClient failed, err:%v, fills:%v", err, fills)
 		return
 	}
 
@@ -271,8 +294,11 @@ func insertFuturesInstrumentsFills(ctx context.Context, instrumentID, orderID st
 	}
 
 	if len(data) > 0 {
-		collection = client.Database("main_quantify").Collection("futures_instruments_fills")
-		_, _ = collection.InsertMany(ctx, data)
+		collection := client.Database("main_quantify").Collection("futures_instruments_fills")
+		insertManyResult, err := collection.InsertMany(ctx, data)
+		if err != nil {
+			mylog.Logger.Error().Msgf("[insertFuturesInstrumentsFills] collection InsertMany failed, err:%v, insertManyResult:%v", err, insertManyResult)
+		}
 	}
 }
 
@@ -280,8 +306,8 @@ func FixFuturesInstrumentsOrders() {
 	ctx := context.Background()
 
 	//对未成交，部分成交，下单中，撤单中的订单进行修正
-	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
-	cursor, err = collection.Find(ctx, bson.D{{
+	collection := client.Database("main_quantify").Collection("futures_instruments_orders")
+	cursor, err := collection.Find(ctx, bson.D{{
 		"state", bson.D{{"$in", bson.A{"0", "1", "3", "4"}}},
 	}}, options.Find().SetSort(bson.M{"_id": -1}), options.Find().SetLimit(100))
 	if err != nil {
@@ -294,14 +320,21 @@ func FixFuturesInstrumentsOrders() {
 	for cursor.Next(ctx) {
 		err = cursor.Decode(&record)
 
-		mylog.Logger.Info().Msgf("[FixFuturesInstrumentsOrders] cursor Decode info, err=%v, record=%v", err, record)
+		if err != nil {
+			mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] cursor Decode failed, err=%v, record=%v", err, record)
+		} else {
+			realOrder, err := trade.OKexClient.GetFuturesOrder(record["instrument_id"], record["order_id"])
+			if err != nil {
+				mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] trade OKexClient failed, err=%v, realOrder=%v", err, realOrder)
+			}
 
-		if err == nil {
-			realOrder, _ := trade.OKexClient.GetFuturesOrder(record["instrument_id"], record["order_id"])
-			_, _ = collection.UpdateOne(ctx, bson.D{
+			updateResult, err := collection.UpdateOne(ctx, bson.D{
 				{"instrument_id", record["instrument_id"]},
 				{"order_id", record["order_id"]},
 			}, realOrder)
+			if err != nil {
+				mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] collection UpdateOne failed, err=%v, updateResult=%v", err, updateResult)
+			}
 		}
 	}
 }

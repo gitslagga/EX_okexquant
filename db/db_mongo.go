@@ -175,13 +175,12 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 	defer cursor.Close(ctx)
 
 	var recordArray []map[string]interface{}
-	var order map[string]interface{}
 	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
 
 	for cursor.Next(ctx) {
 		orderID := cursor.Current.Lookup("order_id").StringValue()
 
-		mylog.Logger.Info().Msgf("[GetFuturesOrders] cursor Decode info, cursor=%v, orderID=%v", cursor, orderID)
+		//mylog.Logger.Info().Msgf("[GetFuturesOrders] cursor Decode info, cursor=%v, orderID=%v", cursor, orderID)
 
 		size, _ = collection.CountDocuments(ctx, bson.D{
 			{"instrument_id", instrumentID},
@@ -191,6 +190,7 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 			insertFuturesInstrumentsOrder(ctx, instrumentID, orderID)
 		}
 
+		var order map[string]interface{}
 		err = collection.FindOne(ctx, bson.D{
 			{"instrument_id", instrumentID},
 			{"order_id", orderID},
@@ -227,12 +227,12 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	}
 
 	defer cursor.Close(ctx)
-	var record map[string]interface{}
 	var recordArray []map[string]interface{}
 	for cursor.Next(ctx) {
+		var record map[string]interface{}
 		err = cursor.Decode(&record)
 
-		mylog.Logger.Info().Msgf("[GetFuturesFills] cursor Decode info, cursor=%v, record=%v", cursor, record)
+		//mylog.Logger.Info().Msgf("[GetFuturesFills] cursor Decode info, cursor=%v, record=%v", cursor, record)
 
 		if err == nil {
 			recordArray = append(recordArray, record)

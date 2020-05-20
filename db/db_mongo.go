@@ -217,8 +217,8 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	}
 
 	cursor, err = collection.Find(ctx, bson.D{
-		{"instrument_id", instrumentID},
-		{"order_id", orderID},
+		{"instrumentid", instrumentID},
+		{"orderid", orderID},
 	}, options.Find().SetSort(bson.M{"_id": -1}), options.Find().SetLimit(100))
 
 	if err != nil {
@@ -232,7 +232,7 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 		var record map[string]interface{}
 		err = cursor.Decode(&record)
 
-		//mylog.Logger.Info().Msgf("[GetFuturesFills] cursor Decode info, cursor=%v, record=%v", cursor, record)
+		mylog.Logger.Info().Msgf("[GetFuturesFills] cursor Decode info, cursor=%v, record=%v", cursor, record)
 
 		if err == nil {
 			recordArray = append(recordArray, record)
@@ -294,7 +294,7 @@ func FixFuturesInstrumentsOrders() {
 	for cursor.Next(ctx) {
 		err = cursor.Decode(&record)
 
-		//mylog.Logger.Info().Msgf("[GetFuturesFills] cursor Decode info, cursor=%v, record=%v", cursor, record)
+		mylog.Logger.Info().Msgf("[FixFuturesInstrumentsOrders] cursor Decode info, err=%v, record=%v", err, record)
 
 		if err == nil {
 			realOrder, _ := trade.OKexClient.GetFuturesOrder(record["instrument_id"], record["order_id"])

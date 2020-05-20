@@ -5,6 +5,7 @@ import (
 	"EX_okexquant/db"
 	"EX_okexquant/mylog"
 	"github.com/gin-gonic/gin"
+	"github.com/lithammer/shortuuid"
 	"net/http"
 )
 
@@ -130,8 +131,14 @@ func PostFuturesOrder(c *gin.Context) {
 	}
 
 	optionParam := make(map[string]string)
+	optionParam["client_oid"] = orderParam.ClientOID
 	optionParam["order_type"] = orderParam.OrderType
 	optionParam["match_price"] = orderParam.MatchPrice
+
+	//开多或者开空的时候，生成通用唯一识别码
+	if orderParam.Type == "1" || orderParam.Type == "2" {
+		optionParam["client_oid"] = shortuuid.New()
+	}
 
 	list, err := db.PostFuturesOrder(orderParam.UserID, orderParam.InstrumentID, orderParam.Type, orderParam.Price, orderParam.Size, optionParam)
 	if err != nil {

@@ -115,7 +115,7 @@ func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
 			{"ledger_id", v["ledger_id"]},
 		}).Decode(&record)
 
-		if err == mongo.ErrNoDocuments || record == nil {
+		if err == mongo.ErrNoDocuments || len(record) <= 0 {
 			_, _ = collection.InsertOne(getContext(), v)
 		}
 	}
@@ -196,7 +196,7 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 			{"order_id", orderID},
 		}).Decode(&order)
 
-		if err != nil {
+		if err == nil {
 			recordArray = append(recordArray, order)
 		}
 	}
@@ -234,7 +234,7 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 
 		mylog.Logger.Info().Msgf("[GetFuturesFills] cursor Decode info, cursor=%v, record=%v", cursor, record)
 
-		if err != nil {
+		if err == nil {
 			recordArray = append(recordArray, record)
 		}
 	}
@@ -289,14 +289,17 @@ func FixFuturesInstrumentsOrders() {
 	}
 
 	defer cursor.Close(ctx)
-	for cursor.Next(ctx) {
-		instrumentID := cursor.Current.Lookup("instrument_id").String()
-		orderID := cursor.Current.Lookup("order_id").String()
 
-		realOrder, _ := trade.OKexClient.GetFuturesOrder(instrumentID, orderID)
-		_, _ = collection.UpdateOne(ctx, bson.D{
-			{"instrument_id", instrumentID},
-			{"order_id", orderID},
-		}, realOrder)
+	var record map[string]string
+	for cursor.Next(ctx) {
+		err = cursor.Decode(&record)
+
+		if err == nil {
+			realOrder, _ := trade.OKexClient.GetFuturesOrder(record["instrument_id"], record["order_id"])
+			_, _ = collection.UpdateOne(ctx, bson.D{
+				{"instrument_id", record["instrument_id"]},
+				{"order_id", record["order_id"]},
+			}, realOrder)
+		}
 	}
 }

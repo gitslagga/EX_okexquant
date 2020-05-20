@@ -179,7 +179,7 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
 
 	for cursor.Next(ctx) {
-		orderID := cursor.Current.Lookup("order_id").String()
+		orderID := cursor.Current.Lookup("order_id").StringValue()
 
 		mylog.Logger.Info().Msgf("[GetFuturesOrders] cursor Decode info, cursor=%v, orderID=%v", cursor, orderID)
 
@@ -293,6 +293,8 @@ func FixFuturesInstrumentsOrders() {
 	var record map[string]string
 	for cursor.Next(ctx) {
 		err = cursor.Decode(&record)
+
+		//mylog.Logger.Info().Msgf("[GetFuturesFills] cursor Decode info, cursor=%v, record=%v", cursor, record)
 
 		if err == nil {
 			realOrder, _ := trade.OKexClient.GetFuturesOrder(record["instrument_id"], record["order_id"])

@@ -70,7 +70,7 @@ func GetFuturesInstrumentPosition(instrumentID string) (interface{}, error) {
 		}
 	}
 
-	updateResult, err := collection.UpdateOne(ctx, bson.D{{"instrument_id", instrumentID}}, *position)
+	updateResult, err := collection.UpdateOne(ctx, bson.D{{"instrument_id", instrumentID}}, bson.D{{"$set", *position}})
 	if err != nil {
 		mylog.Logger.Error().Msgf("[InsertFuturesInstrumentsTicker] collection UpdateOne failed, err=%v, updateResult:%v", err, updateResult)
 	}
@@ -100,7 +100,7 @@ func GetFuturesUnderlyingAccount(underlying string) (interface{}, error) {
 		}
 	}
 
-	updateResult, err := collection.UpdateOne(ctx, bson.D{{"underlying", underlying}}, account)
+	updateResult, err := collection.UpdateOne(ctx, bson.D{{"underlying", underlying}}, bson.D{{"$set", account}})
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetFuturesInstrumentsPosition] collection UpdateOne failed, err=%v, updateResult:%v", err, updateResult)
 	}
@@ -331,7 +331,7 @@ func FixFuturesInstrumentsOrders() {
 			updateResult, err := collection.UpdateOne(ctx, bson.D{
 				{"instrument_id", record["instrument_id"]},
 				{"order_id", record["order_id"]},
-			}, realOrder)
+			}, bson.D{{"$set", realOrder}})
 			if err != nil {
 				mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] collection UpdateOne failed, err=%v, updateResult=%v", err, updateResult)
 			}

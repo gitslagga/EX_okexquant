@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
@@ -24,12 +23,6 @@ var (
 	cursor       *mongo.Cursor
 	size         int64
 )
-
-type bsonData struct {
-	//struct里面获取ObjectID
-	HowieId primitive.ObjectID `bson:"_id"`
-	OrderID string             `bson:"order_id"`
-}
 
 func InitMongoCli() {
 	uri := config.Config.Mongo.ApplyURI
@@ -179,35 +172,33 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 		return nil, err
 	}
 
-	defer cursor.Close(context.Background())
+	defer cursor.Close(ctx)
 
-	var record bsonData
 	var recordArray []map[string]interface{}
 	var order map[string]interface{}
 	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
 
-	for cursor.Next(context.Background()) {
-		err = cursor.Decode(&record)
-		if err != nil {
-			mylog.Logger.Error().Msgf("[GetFuturesOrders] cursor Decode failed, err=%v, record=%v", err, record)
-		}
+	for cursor.Next(ctx) {
+		orderID := cursor.Current.Lookup("order_id").String()
 
-		mylog.Logger.Info().Msgf("[GetFuturesOrders] cursor Decode info, cursor=%v, record=%v", cursor, record)
+		mylog.Logger.Info().Msgf("[GetFuturesOrders] cursor Decode info, cursor=%v, orderID=%v", cursor, orderID)
 
 		size, _ = collection.CountDocuments(ctx, bson.D{
 			{"instrument_id", instrumentID},
-			{"order_id", record.OrderID},
+			{"order_id", orderID},
 		})
 		if size <= 0 {
-			insertFuturesInstrumentsOrder(ctx, instrumentID, record.OrderID)
+			insertFuturesInstrumentsOrder(ctx, instrumentID, orderID)
 		}
 
-		_ = collection.FindOne(ctx, bson.D{
+		err = collection.FindOne(ctx, bson.D{
 			{"instrument_id", instrumentID},
-			{"order_id", record.OrderID},
+			{"order_id", orderID},
 		}).Decode(&order)
 
-		recordArray = append(recordArray, order)
+		if err != nil {
+			recordArray = append(recordArray, order)
+		}
 	}
 
 	return recordArray, nil
@@ -235,12 +226,17 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 		return nil, err
 	}
 
-	defer cursor.Close(context.Background())
+	defer cursor.Close(ctx)
 	var record map[string]interface{}
 	var recordArray []map[string]interface{}
-	for cursor.Next(context.Background()) {
-		_ = cursor.Decode(&record)
-		recordArray = append(recordArray, record)
+	for cursor.Next(ctx) {
+		err = cursor.Decode(&record)
+
+		mylog.Logger.Info().Msgf("[GetFuturesFills] cursor Decode info, cursor=%v, record=%v", cursor, record)
+
+		if err != nil {
+			recordArray = append(recordArray, record)
+		}
 	}
 
 	return recordArray, nil
@@ -253,7 +249,7 @@ func insertFuturesInstrumentsOrder(ctx context.Context, instrumentID, orderID st
 		mylog.Logger.Error().Msgf("insertFuturesInstrumentsOrder error! err:%v", err)
 	}
 
-	if order != nil {
+	if len(order) > 0 {
 		collection = client.Database("main_quantify").Collection("futures_instruments_orders")
 		_, _ = collection.InsertOne(ctx, order)
 	}
@@ -274,7 +270,7 @@ func insertFuturesInstrumentsFills(ctx context.Context, instrumentID, orderID st
 		data = append(data, v)
 	}
 
-	if data != nil {
+	if len(data) > 0 {
 		collection = client.Database("main_quantify").Collection("futures_instruments_fills")
 		_, _ = collection.InsertMany(ctx, data)
 	}
@@ -292,15 +288,15 @@ func FixFuturesInstrumentsOrders() {
 		mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] collection Find failed, err=%v, cursor=%v", err, cursor)
 	}
 
-	defer cursor.Close(context.Background())
-	var order map[string]string
-	for cursor.Next(context.Background()) {
-		_ = cursor.Decode(&order)
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		instrumentID := cursor.Current.Lookup("instrument_id").String()
+		orderID := cursor.Current.Lookup("order_id").String()
 
-		realOrder, _ := trade.OKexClient.GetFuturesOrder(order["instrument_id"], order["order_id"])
+		realOrder, _ := trade.OKexClient.GetFuturesOrder(instrumentID, orderID)
 		_, _ = collection.UpdateOne(ctx, bson.D{
-			{"instrument_id", order["instrument_id"]},
-			{"order_id", order["order_id"]},
+			{"instrument_id", instrumentID},
+			{"order_id", orderID},
 		}, realOrder)
 	}
 }

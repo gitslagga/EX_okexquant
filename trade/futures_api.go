@@ -292,10 +292,10 @@ func (client *Client) CancelFuturesInstrumentOrder(InstrumentId string, orderid_
 请求示例
 GET/api/futures/v3/instruments/BTC-USD-180309/mark_price
 */
-func (c *Client) GetInstrumentMarkPrice(instrumentId string) (*FuturesMarkdown, error) {
+func (client *Client) GetInstrumentMarkPrice(instrumentId string) (*FuturesMarkdown, error) {
 	uri := GetInstrumentIdUri(FUTURES_INSTRUMENT_MARK_PRICE, instrumentId)
 	r := FuturesMarkdown{}
-	_, err := c.Request(GET, uri, nil, &r)
+	_, err := client.Request(GET, uri, nil, &r)
 	return &r, err
 }
 
@@ -432,7 +432,7 @@ POST/api/futures/v3/accounts/btc/leverage{"leverage":"10"}（全仓示例）
 POST/api/futures/v3/accounts/btc/leverage{"instrument_id":"BTC-USD-180213","direction":"long","leverage":"10"}（逐仓示例）
 
 */
-func (c *Client) PostFuturesAccountsLeverage(currency string, leverage string, optionalParams map[string]string) (map[string]interface{}, error) {
+func (client *Client) PostFuturesAccountsLeverage(currency string, leverage string, optionalParams map[string]string) (map[string]interface{}, error) {
 	uri := GetCurrencyUri(FUTURES_ACCOUNT_CURRENCY_LEVERAGE, currency)
 	params := NewParams()
 	params["leverage"] = leverage
@@ -443,7 +443,7 @@ func (c *Client) PostFuturesAccountsLeverage(currency string, leverage string, o
 	}
 
 	r := new(map[string]interface{})
-	_, err := c.Request(POST, uri, params, r)
+	_, err := client.Request(POST, uri, params, r)
 
 	return *r, err
 }
@@ -458,10 +458,10 @@ GET /api/futures/v3/accounts/<currency>/leverage
 请求示例
 GET/api/futures/v3/accounts/btc/leverage
 */
-func (c *Client) GetFuturesAccountsLeverage(currency string) (map[string]interface{}, error) {
+func (client *Client) GetFuturesAccountsLeverage(currency string) (map[string]interface{}, error) {
 	uri := GetCurrencyUri(FUTURES_ACCOUNT_CURRENCY_LEVERAGE, currency)
 	r := new(map[string]interface{})
-	_, err := c.Request(GET, uri, nil, r)
+	_, err := client.Request(GET, uri, nil, r)
 	return *r, err
 }
 
@@ -552,8 +552,8 @@ GET /api/futures/v3/fills
 请求示例
 GET/api/futures/v3/fills?order_id=123123&instrument_id=BTC-USD-180309&after=2517062044057601&limit=50
 */
-func (client *Client) GetFuturesFills(InstrumentId string, orderId string, optionalParams map[string]string) ([]FuturesFillResult, error) {
-	var fillsResult []FuturesFillResult
+func (client *Client) GetFuturesFills(InstrumentId string, orderId string, optionalParams map[string]string) ([]map[string]string, error) {
+	var fillsResult []map[string]string
 	params := NewParams()
 	params["order_id"] = orderId
 	params["instrument_id"] = InstrumentId

@@ -166,7 +166,7 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 	cursor, err = collection.Find(ctx, bson.D{
 		{"user_id", userID},
 		{"instrument_id", instrumentID},
-	}, options.Find().SetSort(bson.M{"_id": -1}))
+	}, options.Find().SetSort(bson.M{"_id": -1}), options.Find().SetLimit(100))
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetFuturesOrders] collection Find failed, err=%v, cursor=%v", err, cursor)
 		return nil, err
@@ -219,7 +219,7 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	cursor, err = collection.Find(ctx, bson.D{
 		{"instrument_id", instrumentID},
 		{"order_id", orderID},
-	})
+	}, options.Find().SetSort(bson.M{"_id": -1}), options.Find().SetLimit(100))
 
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetFuturesFills] collection Find failed, err=%v, cursor=%v", err, cursor)
@@ -283,7 +283,7 @@ func FixFuturesInstrumentsOrders() {
 	collection = client.Database("main_quantify").Collection("futures_instruments_orders")
 	cursor, err = collection.Find(ctx, bson.D{{
 		"state", bson.D{{"$in", bson.A{"0", "1", "3", "4"}}},
-	}})
+	}}, options.Find().SetSort(bson.M{"_id": -1}), options.Find().SetLimit(100))
 	if err != nil {
 		mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] collection Find failed, err=%v, cursor=%v", err, cursor)
 	}

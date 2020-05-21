@@ -41,8 +41,8 @@ maxPoolSize = 200
 timeout = 10
 
 [trade]
-endpoint = "https://testnet.okex.com"
-wsEndpoint = "wss://real.okex.com:8443/ws/v3?brokerId=181"
+endpoint = "https://testnet.okex.me"
+wsEndpoint = "wss://real.okex.me:8443/ws/v3?brokerId=181"
 apiKey = "666cd148-9cb1-4a0d-a343-e7be2d1e666f"
 secretKey = "0B95195A625F490452344CAD24E663E0"
 passphrase = "slagga"

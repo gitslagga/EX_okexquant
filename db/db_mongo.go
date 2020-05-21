@@ -217,9 +217,10 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 
 		if err != nil {
 			mylog.Logger.Error().Msgf("[GetFuturesOrders] collection FindOne failed, err=%v, order=%v", err, order)
-		} else {
-			recordArray = append(recordArray, order)
+			continue
 		}
+
+		recordArray = append(recordArray, order)
 	}
 
 	return recordArray, nil
@@ -255,9 +256,10 @@ func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 
 		if err != nil {
 			mylog.Logger.Error().Msgf("[GetFuturesFills] cursor Decode failed, err=%v, record=%v", err, record)
-		} else {
-			recordArray = append(recordArray, record)
+			continue
 		}
+
+		recordArray = append(recordArray, record)
 	}
 
 	return recordArray, nil
@@ -267,6 +269,7 @@ func insertFuturesInstrumentsOrder(ctx context.Context, instrumentID, orderID st
 	order, err := trade.OKexClient.GetFuturesOrder(instrumentID, orderID)
 	if err != nil {
 		mylog.Logger.Error().Msgf("[insertFuturesInstrumentsOrder] trade OKexClient failed, err:%v, order:%v", err, order)
+		return
 	}
 
 	if len(order) > 0 {
@@ -326,6 +329,7 @@ func FixFuturesInstrumentsOrders() {
 			realOrder, err := trade.OKexClient.GetFuturesOrder(record["instrument_id"], record["order_id"])
 			if err != nil {
 				mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] trade OKexClient failed, err=%v, realOrder=%v", err, realOrder)
+				continue
 			}
 
 			updateResult, err := collection.UpdateOne(ctx, bson.D{

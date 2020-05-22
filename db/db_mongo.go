@@ -229,7 +229,10 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 func GetFuturesFills(instrumentID, orderID string) (interface{}, error) {
 	ctx := context.Background()
 	collection := client.Database("main_quantify").Collection("futures_instruments_fills")
-	size, err := collection.CountDocuments(ctx, bson.D{})
+	size, err := collection.CountDocuments(ctx, bson.D{
+		{"instrument_id", instrumentID},
+		{"order_id", orderID},
+	})
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetFuturesFills] collection CountDocuments failed, err=%v, size=%v", err, size)
 		return nil, err

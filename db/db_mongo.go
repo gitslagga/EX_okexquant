@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"strconv"
 	"time"
 )
 
@@ -138,6 +139,30 @@ func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
 }
 
 func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalParams map[string]string) (interface{}, error) {
+	ctx := getContext()
+
+	//平多平空的时候，要传入client_oid，来判断平那个订单，平的数量是否正确
+	if oType == "3" || oType == "4" {
+		var order map[string]string
+		iSize, _ := strconv.Atoi(size)
+		oSize, _ := strconv.Atoi(order["size"])
+
+		collection := client.Database("main_quantify").Collection("futures_instruments_orders")
+		err := collection.FindOne(ctx, bson.D{
+			{"instrument_id", instrumentID},
+			{"client_oid", optionalParams["client_oid"]},
+		}).Decode(&order)
+
+		if err != nil {
+			mylog.Logger.Error().Msgf("[PostFuturesOrder] collection FindOne failed, err=%v", err)
+			return nil, err
+		}
+		if iSize > oSize || (order["state"] != "0" && order["state"] != "1") {
+			mylog.Logger.Error().Msgf("[PostFuturesOrder] size is bigger or order has been success, iSize:%v, orderSize:%v, orderState=%v", iSize, oSize, order["state"])
+			return nil, errors.New("size is bigger or order has been success")
+		}
+	}
+
 	resp, err := trade.OKexClient.PostFuturesOrder(instrumentID, oType, price, size, optionalParams)
 	if err != nil {
 		mylog.Logger.Error().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
@@ -146,14 +171,14 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 
 	if (*resp)["result"] != true {
 		err = errors.New((*resp)["error_message"].(string))
-		mylog.Logger.Error().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, order=%v", err, resp)
+		mylog.Logger.Error().Msgf("[PostFuturesOrder] trade OKexClient failed, err=%v, resp=%v", err, resp)
 		return nil, err
 	}
 
 	(*resp)["user_id"] = userID
 	(*resp)["instrument_id"] = instrumentID
 	collection := client.Database("main_quantify").Collection("futures_instruments_users")
-	insertResult, err := collection.InsertOne(getContext(), *resp)
+	insertResult, err := collection.InsertOne(ctx, *resp)
 	if err != nil {
 		mylog.Logger.Error().Msgf("[PostFuturesOrder] collection InsertOne failed, err=%v, insertResult:%v", err, insertResult)
 	}

@@ -14,7 +14,6 @@ func InitFutures() {
 	fmt.Println("[Tasks] futures init success.")
 }
 
-//TODO fix order state task
 func StartFixOrdersTask() {
 
 	go func() {

@@ -144,23 +144,25 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 	//平多平空的时候，要传入client_oid，来判断平那个订单，平的数量是否正确
 	if oType == "3" || oType == "4" {
 		var order map[string]string
-		iSize, _ := strconv.Atoi(size)
-		oSize, _ := strconv.Atoi(order["size"])
-
 		collection := client.Database("main_quantify").Collection("futures_instruments_orders")
 		err := collection.FindOne(ctx, bson.D{
 			{"instrument_id", instrumentID},
 			{"client_oid", optionalParams["client_oid"]},
 		}).Decode(&order)
 
+		iSize, _ := strconv.Atoi(size)
+		oSize, _ := strconv.Atoi(order["size"])
+
 		if err != nil {
 			mylog.Logger.Error().Msgf("[PostFuturesOrder] collection FindOne failed, err=%v", err)
 			return nil, err
 		}
-		if iSize > oSize || (order["state"] != "0" && order["state"] != "1") {
-			mylog.Logger.Error().Msgf("[PostFuturesOrder] size is bigger or order has been success, iSize:%v, orderSize:%v, orderState=%v", iSize, oSize, order["state"])
-			return nil, errors.New("size is bigger or order has been success")
+		if iSize > oSize {
+			mylog.Logger.Error().Msgf("[PostFuturesOrder] request size is bigger, iSize:%v, oSize:%v", iSize, oSize)
+			return nil, errors.New("request size is bigger")
 		}
+
+		//TODO judgement many times to closed position
 	}
 
 	resp, err := trade.OKexClient.PostFuturesOrder(instrumentID, oType, price, size, optionalParams)
@@ -182,6 +184,8 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 	if err != nil {
 		mylog.Logger.Error().Msgf("[PostFuturesOrder] collection InsertOne failed, err=%v, insertResult:%v", err, insertResult)
 	}
+
+	insertFuturesInstrumentsOrder(ctx, instrumentID, (*resp)["order_id"].(string))
 
 	return *resp, nil
 }

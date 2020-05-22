@@ -1,4 +1,4 @@
-package main
+package examples
 
 //导入
 import (
@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"os"
+	"testing"
 	"time"
 )
 
@@ -25,11 +26,8 @@ type Howie struct {
 	ExpiredTime time.Time
 }
 
-func main() {
-	TestMongo("mongodb://admin:123456@127.0.0.1:27017")
-}
-
-func TestMongo(url string) {
+func TestMongo(t *testing.T) {
+	var url = "mongodb://admin:123456@127.0.0.1:27017"
 	var (
 		err             error
 		client          *mongo.Client

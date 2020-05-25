@@ -140,18 +140,18 @@ func GetFuturesUnderlyingLedger(underlying string) (interface{}, error) {
 
 func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalParams map[string]string) (interface{}, error) {
 	ctx := getContext()
+	var order map[string]string
+	collection := client.Database("main_quantify").Collection("futures_instruments_orders")
+	iSize, _ := strconv.Atoi(size)
 
 	//平多平空的时候，要传入client_oid，来判断平那个订单，平的数量是否正确
 	if oType == "3" || oType == "4" {
-		var order map[string]string
-		collection := client.Database("main_quantify").Collection("futures_instruments_orders")
 		err := collection.FindOne(ctx, bson.D{
 			{"instrument_id", instrumentID},
 			{"client_oid", optionalParams["client_oid"]},
 		}).Decode(&order)
 
-		iSize, _ := strconv.Atoi(size)
-		oSize, _ := strconv.Atoi(order["size"])
+		oSize, _ := strconv.Atoi(order["remain_size"])
 
 		if err != nil {
 			mylog.Logger.Error().Msgf("[PostFuturesOrder] collection FindOne failed, err=%v", err)
@@ -161,8 +161,6 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 			mylog.Logger.Error().Msgf("[PostFuturesOrder] request size is bigger, iSize:%v, oSize:%v", iSize, oSize)
 			return nil, errors.New("request size is bigger")
 		}
-
-		//TODO judgement many times to closed position
 	}
 
 	resp, err := trade.OKexClient.PostFuturesOrder(instrumentID, oType, price, size, optionalParams)
@@ -177,9 +175,20 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 		return nil, err
 	}
 
+	//平多平空完成的时候，修改剩余仓位数量
+	if oType == "3" || oType == "4" {
+		updateResult, err := collection.UpdateOne(ctx, bson.D{
+			{"instrument_id", instrumentID},
+			{"client_oid", optionalParams["client_oid"]},
+		}, bson.D{{"$inc", bson.D{{"remain_size", -iSize}}}})
+		if err != nil {
+			mylog.Logger.Error().Msgf("[PostFuturesOrder] collection UpdateOne failed, err=%v, updateResult=%v", err, updateResult)
+		}
+	}
+
 	(*resp)["user_id"] = userID
 	(*resp)["instrument_id"] = instrumentID
-	collection := client.Database("main_quantify").Collection("futures_instruments_users")
+	collection = client.Database("main_quantify").Collection("futures_instruments_users")
 	insertResult, err := collection.InsertOne(ctx, *resp)
 	if err != nil {
 		mylog.Logger.Error().Msgf("[PostFuturesOrder] collection InsertOne failed, err=%v, insertResult:%v", err, insertResult)
@@ -306,6 +315,7 @@ func insertFuturesInstrumentsOrder(ctx context.Context, instrumentID, orderID st
 
 	if len(order) > 0 {
 		collection := client.Database("main_quantify").Collection("futures_instruments_orders")
+		order["remain_size"] = order["size"]
 		insertResult, err := collection.InsertOne(ctx, order)
 		if err != nil {
 			mylog.Logger.Error().Msgf("[insertFuturesInstrumentsOrder] collection InsertOne failed, err:%v, insertResult:%v", err, insertResult)

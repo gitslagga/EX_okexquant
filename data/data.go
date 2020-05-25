@@ -65,7 +65,6 @@ type CommonResp struct {
 
 /*********************************** futures trading *************************************/
 type OrderParam struct {
-	UserID       string `json:"user_id" binding:"required"`
 	ClientOID    string `json:"client_oid"`
 	InstrumentID string `json:"instrument_id" binding:"required"`
 	Type         string `json:"type" binding:"required"`

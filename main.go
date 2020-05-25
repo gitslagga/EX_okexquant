@@ -5,6 +5,7 @@ import (
 	"EX_okexquant/data"
 	"EX_okexquant/db"
 	"EX_okexquant/mylog"
+	"EX_okexquant/proxy"
 	"EX_okexquant/tasks"
 	"EX_okexquant/trade"
 	"flag"
@@ -35,10 +36,10 @@ func main() {
 	}
 	mylog.ConfigLoggers()
 
-	//proxy.InitProxy()
-	//defer proxy.CloseProxy()
-	//db.InitRedisCli()
-	//defer db.CloseRedisCli()
+	proxy.InitProxy()
+	defer proxy.CloseProxy()
+	db.InitRedisCli()
+	defer db.CloseRedisCli()
 	//db.InitMysqlCli()
 	//defer db.CloseMysqlCli()
 

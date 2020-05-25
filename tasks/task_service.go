@@ -132,6 +132,15 @@ func PostFuturesOrder(c *gin.Context) {
 		return
 	}
 
+	token := c.GetHeader("token")
+	userID, err := db.ConvertTokenToUserID(token)
+	if err != nil {
+		out.ErrorCode = data.EC_PARAMS_ERR
+		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
 	optionParam := make(map[string]string)
 	optionParam["client_oid"] = orderParam.ClientOID
 	optionParam["order_type"] = orderParam.OrderType
@@ -146,7 +155,7 @@ func PostFuturesOrder(c *gin.Context) {
 		}
 
 		//判断用户余额
-		valid := FindAccountAssets(orderParam.UserID, orderParam.Size, currencyID, "3", "loginUserToken")
+		valid := FindAccountAssets(userID, orderParam.Size, currencyID, "3", "loginUserToken")
 		if !valid {
 			mylog.Logger.Info().Msgf("[Task Service] PostFuturesOrder FindAccountAssets valid: %v", valid)
 			out.ErrorCode = data.EC_INTERNAL_ERR_DB
@@ -159,7 +168,7 @@ func PostFuturesOrder(c *gin.Context) {
 		optionParam["client_oid"] = shortuuid.New()
 	}
 
-	list, err := db.PostFuturesOrder(orderParam.UserID, orderParam.InstrumentID, orderParam.Type, orderParam.Price, orderParam.Size, optionParam)
+	list, err := db.PostFuturesOrder(userID, orderParam.InstrumentID, orderParam.Type, orderParam.Price, orderParam.Size, optionParam)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = err.Error()
@@ -214,9 +223,17 @@ func CancelFuturesInstrumentOrder(c *gin.Context) {
 func GetFuturesOrders(c *gin.Context) {
 	out := data.CommonResp{}
 
-	userID := c.Param("user_id")
+	token := c.GetHeader("token")
+	userID, err := db.ConvertTokenToUserID(token)
+	if err != nil {
+		out.ErrorCode = data.EC_PARAMS_ERR
+		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
 	instrumentID := c.Param("instrument_id")
-	mylog.Logger.Info().Msgf("[Task Service] GetFuturesOrders request param: %s, %s", userID, instrumentID)
+	mylog.Logger.Info().Msgf("[Task Service] GetFuturesOrders request param: %s, %s", token, instrumentID)
 
 	if userID == "" || instrumentID == "" {
 		out.ErrorCode = data.EC_PARAMS_ERR

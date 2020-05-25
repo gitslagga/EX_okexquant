@@ -62,3 +62,17 @@ func newPool(server, password string, maxidle int, maxactive int, idleMills int)
 		},
 	}
 }
+
+func ConvertTokenToUserID(identity string) (string, error) {
+	redisConn := redisPool.Get()
+	defer redisConn.Close()
+
+	redisKey := fmt.Sprintf("loginUserSession:%s", identity)
+	result, err := redis.String(redisConn.Do("GET", redisKey))
+	if err != nil {
+		mylog.Logger.Error().Msgf("redis GET %v error, err:%v", redisKey, err)
+		return "", err
+	}
+
+	return result, err
+}

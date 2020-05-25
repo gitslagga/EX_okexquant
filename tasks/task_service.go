@@ -4,9 +4,11 @@ import (
 	"EX_okexquant/data"
 	"EX_okexquant/db"
 	"EX_okexquant/mylog"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/lithammer/shortuuid"
 	"net/http"
+	"strings"
 )
 
 func InitRouter(r *gin.Engine) {
@@ -135,8 +137,25 @@ func PostFuturesOrder(c *gin.Context) {
 	optionParam["order_type"] = orderParam.OrderType
 	optionParam["match_price"] = orderParam.MatchPrice
 
-	//开多或者开空的时候，生成通用唯一识别码
+	//开多或者开空的时候
 	if orderParam.Type == "1" || orderParam.Type == "2" {
+		//判断交易类型
+		currencyID := "3"
+		if strings.Contains(orderParam.InstrumentID, "USDT") {
+			currencyID = "4"
+		}
+
+		//判断用户余额
+		valid := FindAccountAssets(orderParam.UserID, orderParam.Size, currencyID, "3", "loginUserToken")
+		if !valid {
+			mylog.Logger.Info().Msgf("[Task Service] PostFuturesOrder FindAccountAssets valid: %v", valid)
+			out.ErrorCode = data.EC_INTERNAL_ERR_DB
+			out.ErrorMessage = errors.New("not enough futures assets").Error()
+			c.JSON(http.StatusBadRequest, out)
+			return
+		}
+
+		//生成通用唯一识别码
 		optionParam["client_oid"] = shortuuid.New()
 	}
 

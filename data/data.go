@@ -74,3 +74,32 @@ type OrderParam struct {
 	OrderType    string `json:"order_type"`
 	MatchPrice   string `json:"match_price"`
 }
+
+const (
+	//币本位保证金合约
+	BTCContractVal float64 = 100
+	//USDT保证金合约
+	USDTContractVal float64 = 0.01
+)
+
+type ResponseFindAccount struct {
+	RespCode int         `json:"respCode"`
+	RespDesc string      `json:"respDesc"`
+	RespData accountInfo `json:"respData"`
+}
+
+type accountInfo struct {
+	AssetsID     int     `json:"assetsId"`
+	UserID       int     `json:"userId"`
+	CurrencyID   int     `json:"currencyId"`
+	CurrencyName string  `json:"currencyName"`
+	Available    float64 `json:"available"`
+	Freeze       float64 `json:"freeze"`
+	Total        float64 `json:"total"`
+	Give         float64 `json:"give"`
+	CreateTime   string  `json:"createTime"`
+	UpdateTime   string  `json:"updateTime"`
+	Version      int     `json:"version"`
+	IsLock       string  `json:"isLock"`
+	UsdReal      int     `json:"usdReal"`
+}

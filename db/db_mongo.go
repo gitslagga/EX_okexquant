@@ -143,6 +143,7 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 	var order map[string]string
 	collection := client.Database("main_quantify").Collection("futures_instruments_orders")
 	iSize, _ := strconv.Atoi(size)
+	var rSize int
 
 	//平多平空的时候，要传入client_oid，来判断平那个订单，平的数量是否正确
 	if oType == "3" || oType == "4" {
@@ -161,6 +162,7 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 			mylog.Logger.Error().Msgf("[PostFuturesOrder] request size is bigger, iSize:%v, oSize:%v", iSize, oSize)
 			return nil, errors.New("request size is bigger")
 		}
+		rSize = oSize - iSize
 	}
 
 	resp, err := trade.OKexClient.PostFuturesOrder(instrumentID, oType, price, size, optionalParams)
@@ -180,7 +182,7 @@ func PostFuturesOrder(userID, instrumentID, oType, price, size string, optionalP
 		updateResult, err := collection.UpdateOne(ctx, bson.D{
 			{"instrument_id", instrumentID},
 			{"client_oid", optionalParams["client_oid"]},
-		}, bson.D{{"$inc", bson.D{{"remain_size", -iSize}}}})
+		}, bson.D{{"$set", bson.D{{"remain_size", strconv.Itoa(rSize)}}}})
 		if err != nil {
 			mylog.Logger.Error().Msgf("[PostFuturesOrder] collection UpdateOne failed, err=%v, updateResult=%v", err, updateResult)
 		}

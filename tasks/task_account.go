@@ -12,9 +12,9 @@ import (
 	"strconv"
 )
 
-func FindAccountAssets(userID, size, currencyID, accountType, token string) bool {
-	url := fmt.Sprintf("/assets/v1/api/findUserAssets?userId=%v&currencyId=%v&accountType=%v&token=%v",
-		userID, currencyID, accountType, token)
+func FindAccountAssets(userID, size, currencyID, accountType string) bool {
+	url := fmt.Sprintf("/assets/v1/api/findUserAssets?userId=%v&currencyId=%v&accountType=%v",
+		userID, currencyID, accountType)
 
 	mylog.Logger.Info().Msgf("[FindAccountAssets], url: %v", url)
 	respBody, _, statusCode := proxy.Get(config.Config.Service.NotifyUrl, url, func(*http.Request) {})
@@ -37,8 +37,8 @@ func FindAccountAssets(userID, size, currencyID, accountType, token string) bool
 		return false
 	}
 
-	mylog.Logger.Info().Msgf("[FindAccountAssets] succeed: userID:%v, currencyID:%v, accountType:%v, token:%v",
-		userID, currencyID, accountType, token)
+	mylog.Logger.Info().Msgf("[FindAccountAssets] succeed: userID:%v, currencyID:%v, accountType:%v",
+		userID, currencyID, accountType)
 
 	num, err := strconv.ParseFloat(size, 64)
 	if err != nil {

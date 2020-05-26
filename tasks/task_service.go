@@ -155,7 +155,7 @@ func PostFuturesOrder(c *gin.Context) {
 		}
 
 		//判断用户余额
-		valid := FindAccountAssets(userID, orderParam.Size, currencyID, "3", "loginUserToken")
+		valid := FindAccountAssets(userID, orderParam.Size, currencyID, "3")
 		if !valid {
 			mylog.Logger.Info().Msgf("[Task Service] PostFuturesOrder FindAccountAssets valid: %v", valid)
 			out.ErrorCode = data.EC_INTERNAL_ERR_DB

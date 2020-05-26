@@ -99,6 +99,6 @@ type accountInfo struct {
 	CreateTime   string  `json:"createTime"`
 	UpdateTime   string  `json:"updateTime"`
 	Version      int     `json:"version"`
-	IsLock       string  `json:"isLock"`
+	IsLock       int     `json:"isLock"`
 	UsdReal      int     `json:"usdReal"`
 }

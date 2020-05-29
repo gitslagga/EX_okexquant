@@ -9,19 +9,20 @@ import (
 func InitFutures() {
 	fmt.Println("[Tasks] futures init ...")
 
-	StartFixOrdersTask()
+	StartFuturesInstrumentsTask()
 
 	fmt.Println("[Tasks] futures init success.")
 }
 
-func StartFixOrdersTask() {
+func StartFuturesInstrumentsTask() {
+	db.GetFuturesInstruments()
 
 	go func() {
-		timer := time.NewTicker(2 * time.Second)
+		timer := time.NewTicker(24 * time.Hour)
 		for {
 			select {
 			case <-timer.C:
-				db.FixFuturesInstrumentsOrders()
+				db.GetFuturesInstruments()
 			}
 		}
 	}()

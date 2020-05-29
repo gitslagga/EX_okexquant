@@ -237,18 +237,6 @@ func GetFuturesOrders(userID, instrumentID string) (interface{}, error) {
 	for cursor.Next(ctx) {
 		orderID := cursor.Current.Lookup("order_id").StringValue()
 
-		size, err := collection.CountDocuments(ctx, bson.D{
-			{"instrument_id", instrumentID},
-			{"order_id", orderID},
-		})
-		if err != nil {
-			mylog.Logger.Error().Msgf("[GetFuturesOrders] collection CountDocuments failed, err=%v, size=%v", err, size)
-		}
-
-		if size <= 0 {
-			insertFuturesInstrumentsOrder(ctx, instrumentID, orderID)
-		}
-
 		var order map[string]interface{}
 		err = collection.FindOne(ctx, bson.D{
 			{"instrument_id", instrumentID},
@@ -349,40 +337,33 @@ func insertFuturesInstrumentsFills(ctx context.Context, instrumentID, orderID st
 	}
 }
 
-func FixFuturesInstrumentsOrders() {
-	ctx := context.Background()
-
-	//对未成交，部分成交，下单中，撤单中的订单进行修正
-	collection := client.Database("main_quantify").Collection("futures_instruments_orders")
-	cursor, err := collection.Find(ctx, bson.D{{
-		"state", bson.D{{"$in", bson.A{"0", "1", "3", "4"}}},
-	}}, options.Find().SetSort(bson.M{"_id": -1}), options.Find().SetLimit(100))
+/**
+获取并设置合约信息
+*/
+func GetFuturesInstruments() {
+	instruments, err := trade.OKexClient.GetFuturesInstruments()
 	if err != nil {
-		mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] collection Find failed, err=%v, cursor=%v", err, cursor)
+		mylog.Logger.Error().Msgf("[GetFuturesInstruments] trade OKexClient failed, err:%v, instruments:%v", err, instruments)
+		return
 	}
 
-	defer cursor.Close(ctx)
+	var data []interface{}
+	for _, v := range instruments {
+		data = append(data, v)
+	}
 
-	var record map[string]string
-	for cursor.Next(ctx) {
-		err = cursor.Decode(&record)
-
+	if len(data) > 0 {
+		ctx := context.Background()
+		collection := client.Database("main_quantify").Collection("futures_instruments")
+		err = collection.Drop(ctx)
 		if err != nil {
-			mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] cursor Decode failed, err=%v, record=%v", err, record)
-		} else {
-			realOrder, err := trade.OKexClient.GetFuturesOrder(record["instrument_id"], record["order_id"])
-			if err != nil {
-				mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] trade OKexClient failed, err=%v, realOrder=%v", err, realOrder)
-				continue
-			}
+			mylog.Logger.Error().Msgf("[GetFuturesInstruments] collection Drop failed, err:%v", err)
+		}
 
-			updateResult, err := collection.UpdateOne(ctx, bson.D{
-				{"instrument_id", record["instrument_id"]},
-				{"order_id", record["order_id"]},
-			}, bson.D{{"$set", realOrder}})
-			if err != nil {
-				mylog.Logger.Error().Msgf("[FixFuturesInstrumentsOrders] collection UpdateOne failed, err=%v, updateResult=%v", err, updateResult)
-			}
+		insertManyResult, err := collection.InsertMany(ctx, data)
+		if err != nil {
+			mylog.Logger.Error().Msgf("[GetFuturesInstruments] collection InsertMany failed, err:%v, insertManyResult:%v", err, insertManyResult)
+			return
 		}
 	}
 }

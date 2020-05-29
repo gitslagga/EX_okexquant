@@ -27,3 +27,19 @@ func newOKExClient() *Client {
 	client := NewClient(con)
 	return client
 }
+
+func NewClientByParam(apiKey, secretKey, passphrase string) *Client {
+	var con Config
+	con.Endpoint = config.Config.Trade.Endpoint
+	con.WSEndpoint = config.Config.Trade.WSEndpoint
+
+	con.ApiKey = apiKey
+	con.SecretKey = secretKey
+	con.Passphrase = passphrase
+	con.TimeoutSecond = config.Config.Trade.TimeoutSecond
+	con.IsPrint = config.Config.Trade.IsPrint
+	con.I18n = config.Config.Trade.I18n
+
+	client := NewClient(con)
+	return client
+}

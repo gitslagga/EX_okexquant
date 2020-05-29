@@ -6,7 +6,6 @@ import (
 	"EX_okexquant/mylog"
 	"errors"
 	"github.com/gin-gonic/gin"
-	"github.com/lithammer/shortuuid"
 	"net/http"
 	"strings"
 )
@@ -27,17 +26,29 @@ func InitRouter(r *gin.Engine) {
 */
 func GetFuturesInstrumentPosition(c *gin.Context) {
 	out := data.CommonResp{}
-	instrumentID := c.Param("instrument_id")
-	mylog.Logger.Info().Msgf("[Task Service] GetFuturesPosition request param: %s", instrumentID)
 
-	if instrumentID == "" {
+	token := c.GetHeader("token")
+	userID, err := db.ConvertTokenToUserID(token)
+	instrumentID := c.Param("instrument_id")
+
+	mylog.Logger.Info().Msgf("[Task Service] GetFuturesPosition request param: %s, %s", userID, instrumentID)
+
+	if err != nil || instrumentID == "" {
 		out.ErrorCode = data.EC_PARAMS_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
-	list, err := db.GetFuturesInstrumentPosition(instrumentID)
+	client, err := db.GetClientByUserID(userID)
+	if err != nil {
+		out.ErrorCode = data.EC_NETWORK_ERR
+		out.ErrorMessage = err.Error()
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	list, err := client.GetFuturesInstrumentPosition(instrumentID)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = err.Error()
@@ -59,17 +70,28 @@ func GetFuturesInstrumentPosition(c *gin.Context) {
 func GetFuturesUnderlyingAccount(c *gin.Context) {
 	out := data.CommonResp{}
 
+	token := c.GetHeader("token")
+	userID, err := db.ConvertTokenToUserID(token)
 	underlying := c.Param("underlying")
-	mylog.Logger.Info().Msgf("[Task Service] GetFuturesUnderlyingAccount request param: %s", underlying)
 
-	if underlying == "" {
+	mylog.Logger.Info().Msgf("[Task Service] GetFuturesUnderlyingAccount request param: %s, %s", userID, underlying)
+
+	if err != nil || underlying == "" {
 		out.ErrorCode = data.EC_PARAMS_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
-	list, err := db.GetFuturesUnderlyingAccount(underlying)
+	client, err := db.GetClientByUserID(userID)
+	if err != nil {
+		out.ErrorCode = data.EC_NETWORK_ERR
+		out.ErrorMessage = err.Error()
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	list, err := client.GetFuturesAccountsByCurrency(underlying)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = err.Error()
@@ -91,17 +113,30 @@ func GetFuturesUnderlyingAccount(c *gin.Context) {
 func GetFuturesUnderlyingLedger(c *gin.Context) {
 	out := data.CommonResp{}
 
+	token := c.GetHeader("token")
+	userID, err := db.ConvertTokenToUserID(token)
 	underlying := c.Param("underlying")
-	mylog.Logger.Info().Msgf("[Task Service] GetFuturesUnderlyingLedger request param: %s", underlying)
 
-	if underlying == "" {
+	mylog.Logger.Info().Msgf("[Task Service] GetFuturesUnderlyingLedger request param: %s, %s", userID, underlying)
+
+	if err != nil || underlying == "" {
 		out.ErrorCode = data.EC_PARAMS_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
-	list, err := db.GetFuturesUnderlyingLedger(underlying)
+	client, err := db.GetClientByUserID(userID)
+	if err != nil {
+		out.ErrorCode = data.EC_NETWORK_ERR
+		out.ErrorMessage = err.Error()
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	optionalParams := map[string]string{}
+	optionalParams["limit"] = "100"
+	list, err := client.GetFuturesAccountsLedgerByCurrency(underlying, optionalParams)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = err.Error()
@@ -141,6 +176,8 @@ func PostFuturesOrder(c *gin.Context) {
 		return
 	}
 
+	mylog.Logger.Info().Msgf("[Task Service] PostFuturesOrder request param: %s, %s", userID, orderParam)
+
 	optionParam := make(map[string]string)
 	optionParam["client_oid"] = orderParam.ClientOID
 	optionParam["order_type"] = orderParam.OrderType
@@ -163,12 +200,17 @@ func PostFuturesOrder(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, out)
 			return
 		}
-
-		//生成通用唯一识别码
-		optionParam["client_oid"] = shortuuid.New()
 	}
 
-	list, err := db.PostFuturesOrder(userID, orderParam.InstrumentID, orderParam.Type, orderParam.Price, orderParam.Size, optionParam)
+	client, err := db.GetClientByUserID(userID)
+	if err != nil {
+		out.ErrorCode = data.EC_NETWORK_ERR
+		out.ErrorMessage = err.Error()
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	list, err := client.PostFuturesOrder(orderParam.InstrumentID, orderParam.Type, orderParam.Price, orderParam.Size, optionParam)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = err.Error()
@@ -190,18 +232,29 @@ func PostFuturesOrder(c *gin.Context) {
 func CancelFuturesInstrumentOrder(c *gin.Context) {
 	out := data.CommonResp{}
 
+	token := c.GetHeader("token")
+	userID, err := db.ConvertTokenToUserID(token)
 	instrumentID := c.Param("instrument_id")
 	orderID := c.Param("order_id")
-	mylog.Logger.Info().Msgf("[Task Service] CancelFuturesInstrumentOrder request param: %s, %s", instrumentID, orderID)
 
-	if instrumentID == "" || orderID == "" {
+	if err != nil || instrumentID == "" || orderID == "" {
 		out.ErrorCode = data.EC_PARAMS_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
-	list, err := db.CancelFuturesInstrumentOrder(instrumentID, orderID)
+	mylog.Logger.Info().Msgf("[Task Service] CancelFuturesInstrumentOrder request param: %s, %s, %s", userID, instrumentID, orderID)
+
+	client, err := db.GetClientByUserID(userID)
+	if err != nil {
+		out.ErrorCode = data.EC_NETWORK_ERR
+		out.ErrorMessage = err.Error()
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	list, err := client.CancelFuturesInstrumentOrder(instrumentID, orderID)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = err.Error()
@@ -225,24 +278,35 @@ func GetFuturesOrders(c *gin.Context) {
 
 	token := c.GetHeader("token")
 	userID, err := db.ConvertTokenToUserID(token)
-	if err != nil {
-		out.ErrorCode = data.EC_PARAMS_ERR
-		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
-		c.JSON(http.StatusBadRequest, out)
-		return
-	}
-
 	instrumentID := c.Param("instrument_id")
-	mylog.Logger.Info().Msgf("[Task Service] GetFuturesOrders request param: %s, %s", token, instrumentID)
+	state := c.Param("state")
+	after := c.Param("after")
+	before := c.Param("before")
+	limit := c.Param("limit")
 
-	if userID == "" || instrumentID == "" {
+	if err != nil || instrumentID == "" || state == "" {
 		out.ErrorCode = data.EC_PARAMS_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
-	list, err := db.GetFuturesOrders(userID, instrumentID)
+	mylog.Logger.Info().Msgf("[Task Service] GetFuturesOrders request param: %s, %s, %s", userID, token, instrumentID)
+
+	client, err := db.GetClientByUserID(userID)
+	if err != nil {
+		out.ErrorCode = data.EC_NETWORK_ERR
+		out.ErrorMessage = err.Error()
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	optionParam := make(map[string]string)
+	optionParam["after"] = after
+	optionParam["before"] = before
+	optionParam["limit"] = limit
+
+	list, err := client.GetFuturesOrders(instrumentID, state, optionParam)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = err.Error()
@@ -264,18 +328,37 @@ func GetFuturesOrders(c *gin.Context) {
 func GetFuturesFills(c *gin.Context) {
 	out := data.CommonResp{}
 
+	token := c.GetHeader("token")
+	userID, err := db.ConvertTokenToUserID(token)
 	instrumentID := c.Param("instrument_id")
 	orderID := c.Param("order_id")
-	mylog.Logger.Info().Msgf("[Task Service] GetFuturesFills request param: %s, %s", instrumentID, orderID)
+	after := c.Param("after")
+	before := c.Param("before")
+	limit := c.Param("limit")
 
-	if instrumentID == "" || orderID == "" {
+	if err != nil || instrumentID == "" || orderID == "" {
 		out.ErrorCode = data.EC_PARAMS_ERR
 		out.ErrorMessage = data.ErrorCodeMessage(data.EC_PARAMS_ERR)
 		c.JSON(http.StatusBadRequest, out)
 		return
 	}
 
-	list, err := db.GetFuturesFills(instrumentID, orderID)
+	mylog.Logger.Info().Msgf("[Task Service] GetFuturesFills request param: %s, %s, %s", userID, instrumentID, orderID)
+
+	client, err := db.GetClientByUserID(userID)
+	if err != nil {
+		out.ErrorCode = data.EC_NETWORK_ERR
+		out.ErrorMessage = err.Error()
+		c.JSON(http.StatusBadRequest, out)
+		return
+	}
+
+	optionParam := make(map[string]string)
+	optionParam["after"] = after
+	optionParam["before"] = before
+	optionParam["limit"] = limit
+
+	list, err := client.GetFuturesFills(instrumentID, orderID, optionParam)
 	if err != nil {
 		out.ErrorCode = data.EC_NETWORK_ERR
 		out.ErrorMessage = err.Error()

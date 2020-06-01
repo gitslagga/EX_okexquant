@@ -13,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
 /**
@@ -44,14 +43,8 @@ func PostSwapOrder(c *gin.Context) {
 
 	//开多或者开空的时候
 	if orderParam.Type == "1" || orderParam.Type == "2" {
-		//判断交易类型
-		currencyID := "3"
-		if strings.Contains(orderParam.InstrumentID, "USDT") {
-			currencyID = "4"
-		}
-
 		//判断用户余额
-		valid := FindAccountAssets(userID, orderParam.Size, currencyID, "3")
+		valid := FindAccountAssets(userID, orderParam.Size, orderParam.InstrumentID)
 		if !valid {
 			mylog.Logger.Info().Msgf("[Task Service] PostSwapOrder FindAccountAssets valid: %v", valid)
 			out.ErrorCode = data.EC_INTERNAL_ERR_DB
@@ -135,9 +128,25 @@ func CancelSwapInstrumentOrder(c *gin.Context) {
 	return
 }
 
-func FindAccountAssets(userID, size, currencyID, accountType string) bool {
+func FindAccountAssets(userID, size, instrumentID string) bool {
+	instruments, err := db.GetSwapInstruments(instrumentID)
+	if err != nil {
+		return false
+	}
+
+	contractVal, err := strconv.ParseFloat(instruments["contractval"], 64)
+	if err != nil {
+		mylog.Logger.Error().Msgf("[FindAccountAssets] ParseFloat error, err: %v", err)
+		return false
+	}
+
+	currencyID := "3"
+	if instruments["quotecurrency"] == "USDT" {
+		currencyID = "4"
+	}
+
 	url := fmt.Sprintf("/assets/v1/api/findUserAssets?userId=%v&currencyId=%v&accountType=%v",
-		userID, currencyID, accountType)
+		userID, currencyID, data.SwapContractType)
 
 	mylog.Logger.Info().Msgf("[FindAccountAssets], url: %v", url)
 	respBody, _, statusCode := proxy.Get(config.Config.Service.NotifyUrl, url, func(*http.Request) {})
@@ -148,7 +157,7 @@ func FindAccountAssets(userID, size, currencyID, accountType string) bool {
 	}
 
 	var resp data.ResponseFindAccount
-	err := json.Unmarshal(respBody, &resp)
+	err = json.Unmarshal(respBody, &resp)
 	if err != nil {
 		mylog.Logger.Error().Msgf("[FindAccountAssets] Unmarshal error, err: %v", err)
 		return false
@@ -161,7 +170,7 @@ func FindAccountAssets(userID, size, currencyID, accountType string) bool {
 	}
 
 	mylog.Logger.Info().Msgf("[FindAccountAssets] succeed: userID:%v, currencyID:%v, accountType:%v",
-		userID, currencyID, accountType)
+		userID, currencyID, data.SwapContractType)
 
 	num, err := strconv.ParseFloat(size, 64)
 	if err != nil {
@@ -169,12 +178,7 @@ func FindAccountAssets(userID, size, currencyID, accountType string) bool {
 		return false
 	}
 
-	amount := num / data.BTCContractVal
-	if currencyID == "4" {
-		amount = num / data.USDTContractVal
-	}
-
-	if amount > resp.RespData.Available {
+	if (num / contractVal) >= resp.RespData.Available {
 		return false
 	}
 

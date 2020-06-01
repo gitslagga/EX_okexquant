@@ -82,9 +82,9 @@ func GetClientByUserID(userID string) (*trade.Client, error) {
 }
 
 /**
-获取并设置合约信息
+设置合约信息
 */
-func GetSwapInstruments() {
+func SetSwapInstruments() {
 	instruments, err := trade.OKexClient.GetSwapInstruments()
 	if err != nil {
 		mylog.Logger.Error().Msgf("[GetSwapInstruments] trade OKexClient failed, err:%v, instruments:%v", err, instruments)
@@ -110,4 +110,21 @@ func GetSwapInstruments() {
 			return
 		}
 	}
+}
+
+/**
+获取单个合约信息
+*/
+func GetSwapInstruments(instrumentID string) (map[string]string, error) {
+	ctx := context.Background()
+	var instruments map[string]string
+
+	collection := client.Database("main_quantify").Collection("swap_instruments")
+	err := collection.FindOne(ctx, bson.D{{"instrument_id", instrumentID}}).Decode(instruments)
+	if err != nil {
+		mylog.Logger.Error().Msgf("[GetSwapInstruments] collection Drop failed, err:%v", err)
+		return nil, err
+	}
+
+	return instruments, nil
 }

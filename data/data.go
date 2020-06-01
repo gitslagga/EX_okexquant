@@ -75,10 +75,8 @@ type OrderParam struct {
 }
 
 const (
-	//币本位保证金合约
-	BTCContractVal float64 = 100
-	//USDT保证金合约
-	USDTContractVal float64 = 0.01
+	FuturesContractType int = 3
+	SwapContractType    int = 5
 )
 
 type ResponseFindAccount struct {

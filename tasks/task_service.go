@@ -12,6 +12,8 @@ func InitRouter(r *gin.Engine) {
 	/****************************** 永续合约 *********************************/
 	r.POST("/api/swap/position/:instrument_id", GetSwapInstrumentPosition)
 	r.POST("/api/swap/accounts/:instrument_id", GetSwapInstrumentAccount)
+	r.POST("/api/swap/settings/:instrument_id", GetSwapInstrumentLeverage)
+	r.POST("/api/swap/leverage/:instrument_id", SetSwapInstrumentLeverage)
 	r.POST("/api/swap/ledger/:instrument_id", GetSwapInstrumentLedger)
 	r.POST("/api/swap/order", PostSwapOrder)
 	r.POST("/api/swap/cancel_order/:instrument_id/:order_id", CancelSwapInstrumentOrder)

@@ -15,14 +15,14 @@ func InitFutures() {
 }
 
 func StartSwapInstrumentsTask() {
-	db.GetSwapInstruments()
+	db.SetSwapInstruments()
 
 	go func() {
 		timer := time.NewTicker(24 * time.Hour)
 		for {
 			select {
 			case <-timer.C:
-				db.GetSwapInstruments()
+				db.SetSwapInstruments()
 			}
 		}
 	}()

@@ -7,22 +7,22 @@ import (
 )
 
 func InitFutures() {
-	fmt.Println("[Tasks] futures init ...")
+	fmt.Println("[Tasks] swap init ...")
 
-	StartFuturesInstrumentsTask()
+	StartSwapInstrumentsTask()
 
-	fmt.Println("[Tasks] futures init success.")
+	fmt.Println("[Tasks] swap init success.")
 }
 
-func StartFuturesInstrumentsTask() {
-	db.GetFuturesInstruments()
+func StartSwapInstrumentsTask() {
+	db.GetSwapInstruments()
 
 	go func() {
 		timer := time.NewTicker(24 * time.Hour)
 		for {
 			select {
 			case <-timer.C:
-				db.GetFuturesInstruments()
+				db.GetSwapInstruments()
 			}
 		}
 	}()

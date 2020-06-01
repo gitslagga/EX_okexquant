@@ -63,7 +63,7 @@ type CommonResp struct {
 	Data         interface{} `json:"data" form:"data"`
 }
 
-/*********************************** futures trading *************************************/
+/*********************************** trading *************************************/
 type OrderParam struct {
 	ClientOID    string `json:"client_oid"`
 	InstrumentID string `json:"instrument_id" binding:"required"`

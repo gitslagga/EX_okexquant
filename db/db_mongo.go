@@ -54,7 +54,7 @@ func GetClientByUserID(userID string) (*trade.Client, error) {
 	ctx := context.Background()
 	var userKeys map[string]string
 
-	collection := client.Database("main_quantify").Collection("futures_user_keys")
+	collection := client.Database("main_quantify").Collection("swap_user_keys")
 	errUser := collection.FindOne(ctx, bson.D{{"user_id", userID}}).Decode(&userKeys)
 	if errUser != nil {
 		if errUser == mongo.ErrNoDocuments {
@@ -84,29 +84,29 @@ func GetClientByUserID(userID string) (*trade.Client, error) {
 /**
 获取并设置合约信息
 */
-func GetFuturesInstruments() {
-	instruments, err := trade.OKexClient.GetFuturesInstruments()
+func GetSwapInstruments() {
+	instruments, err := trade.OKexClient.GetSwapInstruments()
 	if err != nil {
-		mylog.Logger.Error().Msgf("[GetFuturesInstruments] trade OKexClient failed, err:%v, instruments:%v", err, instruments)
+		mylog.Logger.Error().Msgf("[GetSwapInstruments] trade OKexClient failed, err:%v, instruments:%v", err, instruments)
 		return
 	}
 
 	var data []interface{}
-	for _, v := range instruments {
+	for _, v := range *instruments {
 		data = append(data, v)
 	}
 
 	if len(data) > 0 {
 		ctx := context.Background()
-		collection := client.Database("main_quantify").Collection("futures_instruments")
+		collection := client.Database("main_quantify").Collection("swap_instruments")
 		err = collection.Drop(ctx)
 		if err != nil {
-			mylog.Logger.Error().Msgf("[GetFuturesInstruments] collection Drop failed, err:%v", err)
+			mylog.Logger.Error().Msgf("[GetSwapInstruments] collection Drop failed, err:%v", err)
 		}
 
 		insertManyResult, err := collection.InsertMany(ctx, data)
 		if err != nil {
-			mylog.Logger.Error().Msgf("[GetFuturesInstruments] collection InsertMany failed, err:%v, insertManyResult:%v", err, insertManyResult)
+			mylog.Logger.Error().Msgf("[GetSwapInstruments] collection InsertMany failed, err:%v, insertManyResult:%v", err, insertManyResult)
 			return
 		}
 	}
